@@ -53,8 +53,10 @@ namespace IRCTCTatkalBot.Services
             if (string.IsNullOrWhiteSpace(vm.ToStation))
                 errors.Add("To station is required.");
 
-            if (vm.JourneyDate.Date < DateTime.Today)
-                errors.Add("Journey date cannot be in the past.");
+            // IRCTC booking calendar follows IST; comparing to local PC date can wrongly reject/accept a journey date.
+            DateTime indiaToday = GetIndiaDateToday();
+            if (vm.JourneyDate.Date < indiaToday)
+                errors.Add($"Journey date cannot be in the past (India date today is {indiaToday:yyyy-MM-dd}).");
 
             if (string.IsNullOrWhiteSpace(vm.TrainClass))
                 errors.Add("Train class is required.");
@@ -81,6 +83,19 @@ namespace IRCTCTatkalBot.Services
             }
 
             return errors;
+        }
+
+        private static DateTime GetIndiaDateToday()
+        {
+            try
+            {
+                var india = TimeZoneInfo.FindSystemTimeZoneById("India Standard Time");
+                return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, india).Date;
+            }
+            catch
+            {
+                return DateTime.Today;
+            }
         }
     }
 }

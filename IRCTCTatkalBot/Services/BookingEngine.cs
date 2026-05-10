@@ -134,7 +134,7 @@ namespace IRCTCTatkalBot.Services
                 // After login, IRCTC may redirect to a dashboard variant.
                 // Always go back to train-search so the From/To/Date inputs exist reliably.
                 Driver.Navigate().GoToUrl("https://www.irctc.co.in/nget/train-search");
-                await Task.Delay(800, ct);
+                await Task.Delay(400, ct);
 
                 // Fill "From" station
                 IWebElement fromInput;
@@ -159,7 +159,7 @@ namespace IRCTCTatkalBot.Services
 
                 fromInput.Clear();
                 fromInput.SendKeys(_config.FromStation);
-                await Task.Delay(800, ct);
+                await Task.Delay(400, ct);
                 // Select first autocomplete suggestion
                 ClickFirstAutocompleteSuggestion(ct);
 
@@ -174,7 +174,7 @@ namespace IRCTCTatkalBot.Services
                 );
                 toInput.Clear();
                 toInput.SendKeys(_config.ToStation);
-                await Task.Delay(800, ct);
+                await Task.Delay(400, ct);
                 ClickFirstAutocompleteSuggestion(ct);
 
                 // Set Journey Date — IRCTC uses PrimeNG p-calendar (dateformat dd/mm/yy). Plain SendKeys often
@@ -311,7 +311,7 @@ namespace IRCTCTatkalBot.Services
                     }
                 }
 
-                await Task.Delay(800, ct);
+                await Task.Delay(350, ct);
                 Logger.Info($"BookingEngine: Search submitted successfully. url={SafeGetUrl()}");
                 return true;
             }
@@ -599,11 +599,12 @@ namespace IRCTCTatkalBot.Services
                           By.CssSelector(".ui-dropdown"))
                       ?? dropRoot;
             _session.SafeClick(trigger);
-            await Task.Delay(350, ct);
+            await Task.Delay(180, ct);
 
             try
             {
-                var optWait = new WebDriverWait(Driver, TimeSpan.FromSeconds(12));
+                var optWait = new WebDriverWait(Driver, TimeSpan.FromSeconds(12))
+                    { PollingInterval = TimeSpan.FromMilliseconds(100) };
                 var option = optWait.Until(d =>
                 {
                     foreach (var li in d.FindElements(By.CssSelector(
@@ -627,7 +628,7 @@ namespace IRCTCTatkalBot.Services
                 });
 
                 _session.SafeClick(option!);
-                await Task.Delay(250, ct);
+                await Task.Delay(140, ct);
                 return true;
             }
             catch (WebDriverTimeoutException)
@@ -706,13 +707,13 @@ namespace IRCTCTatkalBot.Services
 
             try
             {
-                await Task.Delay(1200, ct);
+                await Task.Delay(450, ct);
                 TryDismissBlockingOverlays();
 
-                var rows = ResolveTrainRowRoots(TimeSpan.FromSeconds(60));
+                var rows = ResolveTrainRowRoots(TimeSpan.FromSeconds(35));
                 if (rows.Count == 0)
                 {
-                    rows = WaitUntilAnyVisibleElements(TimeSpan.FromSeconds(45),
+                    rows = WaitUntilAnyVisibleElements(TimeSpan.FromSeconds(28),
                         By.CssSelector("app-train-avl-enq"),
                         By.CssSelector(".train-info-block"),
                         By.CssSelector("div.train-heading"),
@@ -752,15 +753,25 @@ namespace IRCTCTatkalBot.Services
 
                 await TryClickRefreshForClassAsync(card, cls, ct);
 
-                rows = ResolveTrainRowRoots(TimeSpan.FromSeconds(15));
+                // Re-query rows after availability refresh — non-fatal if DOM is mid-update; keep prior card.
+                rows = ResolveTrainRowRoots(TimeSpan.FromSeconds(8));
                 if (rows.Count == 0)
-                    rows = WaitUntilAnyVisibleElements(TimeSpan.FromSeconds(20), By.CssSelector("app-train-avl-enq"), By.CssSelector(".train-info-block")).ToList();
+                {
+                    rows = WaitUntilAnyVisibleElements(TimeSpan.FromSeconds(8),
+                        By.CssSelector("app-train-avl-enq"),
+                        By.CssSelector(".train-info-block"),
+                        By.CssSelector("[class*='train-info']")).ToList();
+                }
 
                 if (rows.Count > 0)
                 {
                     var refreshedCard = PickTrainCard(rows, _config.TrainNumber);
                     if (refreshedCard != null)
                         card = refreshedCard;
+                }
+                else
+                {
+                    Logger.Info("BookingEngine: Train row re-query empty after refresh — continuing with original row element.");
                 }
 
                 IWebElement? classEl = FindClassAvailabilityTarget(card, cls);
@@ -774,10 +785,10 @@ namespace IRCTCTatkalBot.Services
 
                 Logger.Info($"BookingEngine: Clicking class slot for '{cls}' (matched IRCTC label).");
                 RobustClickElement(classEl);
-                await Task.Delay(900, ct);
+                await Task.Delay(450, ct);
                 TryDismissBlockingOverlays();
 
-                await PollUntilBookNowEnabledAsync(card, ct, TimeSpan.FromSeconds(45));
+                await PollUntilBookNowEnabledAsync(card, ct, TimeSpan.FromSeconds(35));
 
                 var bookNowBtn =
                     FindBookNowButtonInCard(card)
@@ -829,40 +840,50 @@ namespace IRCTCTatkalBot.Services
             }
         }
 
+        /// <summary>
+        /// Never throws on timeout — returns empty list so callers can fall back (e.g. keep prior train card after Refresh).
+        /// </summary>
         private IReadOnlyList<IWebElement> WaitUntilAnyVisibleElements(TimeSpan timeout, params By[] locators)
         {
-            var wait = new WebDriverWait(Driver, timeout);
-            var els = wait.Until(d =>
+            try
             {
-                foreach (var by in locators)
+                var wait = new WebDriverWait(Driver, timeout) { PollingInterval = TimeSpan.FromMilliseconds(150) };
+                var els = wait.Until(d =>
                 {
-                    try
+                    foreach (var by in locators)
                     {
-                        var visible = d.FindElements(by).Where(e =>
+                        try
                         {
-                            try
+                            var visible = d.FindElements(by).Where(e =>
                             {
-                                return e.Displayed && e.Size.Height > 2 && e.Size.Width > 2;
-                            }
-                            catch
-                            {
-                                return false;
-                            }
-                        }).ToList();
+                                try
+                                {
+                                    return e.Displayed && e.Size.Height > 2 && e.Size.Width > 2;
+                                }
+                                catch
+                                {
+                                    return false;
+                                }
+                            }).ToList();
 
-                        if (visible.Count > 0)
-                            return visible;
+                            if (visible.Count > 0)
+                                return visible;
+                        }
+                        catch
+                        {
+                            /* ignore */
+                        }
                     }
-                    catch
-                    {
-                        /* ignore */
-                    }
-                }
 
-                return null;
-            });
+                    return null;
+                });
 
-            return els ?? new List<IWebElement>();
+                return els ?? new List<IWebElement>();
+            }
+            catch (WebDriverTimeoutException)
+            {
+                return new List<IWebElement>();
+            }
         }
 
         private async Task TryDismissDatepickerOverlayAsync(CancellationToken ct)
@@ -904,7 +925,7 @@ namespace IRCTCTatkalBot.Services
 
                         _session.SafeClick(el);
                         Logger.Info($"BookingEngine: Clicked availability Refresh for class '{code}'.");
-                        await Task.Delay(2500, ct);
+                        await Task.Delay(1100, ct);
                         return true;
                     }
                     catch
@@ -940,7 +961,7 @@ namespace IRCTCTatkalBot.Services
 
                         _session.SafeClick(el);
                         Logger.Info($"BookingEngine: Clicked icon Refresh for class '{classCode}'.");
-                        await Task.Delay(2500, ct);
+                        await Task.Delay(1100, ct);
                         return;
                     }
                     catch
@@ -959,7 +980,7 @@ namespace IRCTCTatkalBot.Services
         {
             try
             {
-                var wait = new WebDriverWait(Driver, timeout);
+                var wait = new WebDriverWait(Driver, timeout) { PollingInterval = TimeSpan.FromMilliseconds(120) };
                 var found = wait.Until(driver =>
                 {
                     var list = new List<IWebElement>();
@@ -967,7 +988,7 @@ namespace IRCTCTatkalBot.Services
                     {
                         try
                         {
-                            if (el.Displayed && el.Size.Height >= 36 && el.Size.Width >= 160)
+                            if (el.Displayed && el.Size.Height >= 28 && el.Size.Width >= 80)
                                 list.Add(el);
                         }
                         catch
@@ -996,7 +1017,11 @@ namespace IRCTCTatkalBot.Services
                 "2A" => new List<string> { "(2a)", "ac 2 tier", "2 tier", "second ac", "ac 2", " 2a " },
                 "1A" => new List<string> { "(1a)", "first ac", "ac first", "1 tier", " 1a " },
                 "SL" => new List<string> { "(sl)", "sleeper", "sleeper (sl)", " sleeper " },
-                "CC" => new List<string> { "(cc)", "chair car", " ac chair" },
+                "CC" => new List<string>
+                {
+                    "(cc)", "chair car", "ac chair", "executive chair", "exec chair", "chair", "compartment",
+                    "executive"
+                },
                 "2S" => new List<string> { "(2s)", "second seating", " 2s " },
                 _ => new List<string> { c.ToLowerInvariant(), $"({c.ToLowerInvariant()})" },
             };
@@ -1090,6 +1115,8 @@ namespace IRCTCTatkalBot.Services
                             cls.Contains("avl-p", StringComparison.OrdinalIgnoreCase) ||
                             cls.Contains("avl-enq", StringComparison.OrdinalIgnoreCase) ||
                             cls.Contains("booking", StringComparison.OrdinalIgnoreCase) ||
+                            cls.Contains("chair", StringComparison.OrdinalIgnoreCase) ||
+                            cls.Contains("executive", StringComparison.OrdinalIgnoreCase) ||
                             tag is "a" or "button")
                             return node;
                     }
@@ -1164,7 +1191,7 @@ namespace IRCTCTatkalBot.Services
                     }
                 }
 
-                await Task.Delay(450, ct);
+                await Task.Delay(280, ct);
             }
         }
 

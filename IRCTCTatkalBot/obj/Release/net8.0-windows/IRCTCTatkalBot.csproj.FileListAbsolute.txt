@@ -32,3 +32,4 @@ f:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\bin\Release\net8.0-windows\System.IO.Pi
 f:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\bin\Release\net8.0-windows\System.Text.Encodings.Web.dll
 f:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\bin\Release\net8.0-windows\System.Text.Json.dll
 f:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\bin\Release\net8.0-windows\runtimes\browser\lib\net8.0\System.Text.Encodings.Web.dll
+F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\obj\Release\net8.0-windows\IRCTCTatkalBot.sourcelink.json
