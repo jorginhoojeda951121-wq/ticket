@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "hOFZDV5Jz3g=",
+  "dgSpecHash": "0Gnc+UZlj6g=",
   "success": true,
   "projectFilePath": "F:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot.Tests\\IRCTCTatkalBot.Tests.csproj",
   "expectedPackageFiles": [
@@ -22,8 +22,8 @@
     "C:\\Users\\Jupiter\\.nuget\\packages\\xunit.extensibility.core\\2.7.0\\xunit.extensibility.core.2.7.0.nupkg.sha512",
     "C:\\Users\\Jupiter\\.nuget\\packages\\xunit.extensibility.execution\\2.7.0\\xunit.extensibility.execution.2.7.0.nupkg.sha512",
     "C:\\Users\\Jupiter\\.nuget\\packages\\xunit.runner.visualstudio\\2.5.7\\xunit.runner.visualstudio.2.5.7.nupkg.sha512",
-    "C:\\Users\\Jupiter\\.nuget\\packages\\microsoft.netcore.app.ref\\8.0.26\\microsoft.netcore.app.ref.8.0.26.nupkg.sha512",
     "C:\\Users\\Jupiter\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\8.0.26\\microsoft.windowsdesktop.app.ref.8.0.26.nupkg.sha512",
+    "C:\\Users\\Jupiter\\.nuget\\packages\\microsoft.netcore.app.ref\\8.0.26\\microsoft.netcore.app.ref.8.0.26.nupkg.sha512",
     "C:\\Users\\Jupiter\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\8.0.26\\microsoft.aspnetcore.app.ref.8.0.26.nupkg.sha512"
   ],
   "logs": []
