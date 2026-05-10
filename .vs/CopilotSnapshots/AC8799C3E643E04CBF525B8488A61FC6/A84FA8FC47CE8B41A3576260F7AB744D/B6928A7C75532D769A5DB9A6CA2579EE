@@ -1,0 +1,256 @@
+﻿using System;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
+using OpenQA.Selenium;
+using OpenQA.Selenium.Chrome;
+using OpenQA.Selenium.Support.UI;
+using IRCTCTatkalBot.Helpers;
+using IRCTCTatkalBot.Models;
+
+namespace IRCTCTatkalBot.Services
+{
+    /// <summary>
+    /// Manages a single Selenium WebDriver session for one account.
+    /// Responsible for:
+    ///   - Creating and configuring the ChromeDriver
+    ///   - Handling login (username/password + captcha)
+    ///   - Safe element interaction
+    ///   - Screenshot capture for debugging
+    /// </summary>
+    public class SessionManager : IDisposable
+    {
+        private readonly Account _account;
+        private readonly AccountManager _accountManager;
+        private readonly CaptchaSolver _captchaSolver;
+        private IWebDriver? _driver;
+        private bool _disposed;
+
+        public IWebDriver Driver
+        {
+            get
+            {
+                if (_driver == null)
+                    throw new InvalidOperationException("Driver not initialized. Call StartDriver() first.");
+                return _driver;
+            }
+        }
+
+        public SessionManager(Account account, AccountManager accountManager, CaptchaSolver captchaSolver)
+        {
+            _account = account ?? throw new ArgumentNullException(nameof(account));
+            _accountManager = accountManager ?? throw new ArgumentNullException(nameof(accountManager));
+            _captchaSolver = captchaSolver ?? throw new ArgumentNullException(nameof(captchaSolver));
+        }
+
+        // ── Driver Lifecycle ──────────────────────────────────────────
+
+        /// <summary>
+        /// Creates and configures a new ChromeDriver instance.
+        /// </summary>
+        public void StartDriver()
+        {
+            if (_driver != null)
+                throw new InvalidOperationException("Driver already started. Dispose first before starting a new one.");
+
+            try
+            {
+                var options = new ChromeOptions();
+
+                // Suppress notifications and popups
+                options.AddArgument("--disable-notifications");
+                options.AddArgument("--disable-popup-blocking");
+                options.AddArgument("--disable-extensions");
+
+                // Use proxy if configured
+                if (!string.IsNullOrWhiteSpace(_account.ProxyAddress))
+                {
+                    options.AddArgument($"--proxy-server={_account.ProxyAddress}");
+                }
+
+                // Headless mode (optional - can be removed for debugging)
+                // options.AddArgument("--headless");
+
+                _driver = new ChromeDriver(options);
+                _driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(10);
+
+                Logger.Info($"SessionManager: ChromeDriver started for {_account.Username}");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "SessionManager.StartDriver");
+                throw;
+            }
+        }
+
+        // ── Login Flow ────────────────────────────────────────────────
+
+        /// <summary>
+        /// Navigates to IRCTC and logs in with the account credentials + captcha.
+        /// </summary>
+        public async Task<bool> LoginAsync(CancellationToken ct = default)
+        {
+            if (_driver == null)
+            {
+                Logger.Error("SessionManager.LoginAsync: Driver not initialized");
+                return false;
+            }
+
+            try
+            {
+                Logger.Info($"SessionManager: Logging in {_account.Username}...");
+
+                // Navigate to IRCTC website
+                _driver.Navigate().GoToUrl("https://www.irctc.co.in/nget/booking/");
+                await Task.Delay(3000, ct);
+
+                // Wait for login form to appear
+                var wait = new WebDriverWait(_driver, TimeSpan.FromSeconds(20));
+                var usernameField = wait.Until(d =>
+                    d.FindElement(By.CssSelector("input[formControlName='userid']")));
+
+                // Fill username
+                usernameField.Clear();
+                usernameField.SendKeys(_account.Username);
+                await Task.Delay(500, ct);
+
+                // Fill password
+                var passwordField = _driver.FindElement(By.CssSelector("input[formControlName='password']"));
+                passwordField.Clear();
+                passwordField.SendKeys(_accountManager.GetPassword(_account));
+                await Task.Delay(500, ct);
+
+                // Solve and fill captcha
+                var captchaElement = _driver.FindElement(By.CssSelector("img[src*='captcha']"));
+                string captchaBase64 = GetElementScreenshot(captchaElement);
+
+                string? captchaText = await _captchaSolver.SolveImageCaptchaAsync(captchaBase64, ct);
+                if (string.IsNullOrWhiteSpace(captchaText))
+                {
+                    Logger.Warning("SessionManager: Captcha solving failed");
+                    TakeScreenshot("captcha_failed");
+                    return false;
+                }
+
+                var captchaInput = _driver.FindElement(By.CssSelector("input[formControlName='captcha']"));
+                captchaInput.Clear();
+                captchaInput.SendKeys(captchaText);
+                await Task.Delay(500, ct);
+
+                // Click login button
+                var loginBtn = _driver.FindElement(By.CssSelector("button[type='submit']"));
+                SafeClick(loginBtn);
+
+                // Wait for dashboard/home page (check for a post-login element)
+                var homeIndicator = wait.Until(d =>
+                    d.FindElements(By.CssSelector(".quick-booking, .booking-container")).Count > 0
+                    || d.FindElements(By.CssSelector("div[class*='dashboard']")).Count > 0);
+
+                await Task.Delay(2000, ct);
+                Logger.Info($"SessionManager: ✓ Login successful for {_account.Username}");
+                return true;
+            }
+            catch (OperationCanceledException)
+            {
+                Logger.Warning("SessionManager.LoginAsync: Cancelled");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "SessionManager.LoginAsync");
+                TakeScreenshot("login_error");
+                return false;
+            }
+        }
+
+        // ── Helper Methods ────────────────────────────────────────────
+
+        /// <summary>
+        /// Safely clicks an element, scrolling it into view if necessary.
+        /// </summary>
+        public void SafeClick(IWebElement element)
+        {
+            try
+            {
+                var js = (IJavaScriptExecutor)Driver;
+                js.ExecuteScript("arguments[0].scrollIntoView(true);", element);
+                Task.Delay(300).Wait();
+                element.Click();
+            }
+            catch (ElementNotInteractableException)
+            {
+                // Fallback to JavaScript click
+                var js = (IJavaScriptExecutor)Driver;
+                js.ExecuteScript("arguments[0].click();", element);
+            }
+        }
+
+        /// <summary>
+        /// Captures a screenshot and saves it to the app data folder.
+        /// </summary>
+        public string TakeScreenshot(string label = "screenshot")
+        {
+            try
+            {
+                string screenshotDir = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "IRCTCTatkalBot", "Screenshots");
+                Directory.CreateDirectory(screenshotDir);
+
+                string filename = $"{label}_{DateTime.Now:yyyyMMdd_HHmmss}.png";
+                string filePath = Path.Combine(screenshotDir, filename);
+
+                var screenshot = ((ITakesScreenshot)Driver).GetScreenshot();
+                screenshot.SaveAsFile(filePath);
+
+                Logger.Info($"SessionManager: Screenshot saved to {filePath}");
+                return filePath;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "SessionManager.TakeScreenshot");
+                return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Gets a screenshot of a specific element (for captcha solving).
+        /// </summary>
+        private string GetElementScreenshot(IWebElement element)
+        {
+            try
+            {
+                var screenshot = ((ITakesScreenshot)element).GetScreenshot();
+                return Convert.ToBase64String(screenshot.AsByteArray);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "SessionManager.GetElementScreenshot");
+                return string.Empty;
+            }
+        }
+
+        // ── IDisposable ───────────────────────────────────────────────
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+
+            try
+            {
+                _driver?.Quit();
+                _driver?.Dispose();
+                Logger.Info("SessionManager: Driver disposed");
+            }
+            catch (Exception ex)
+            {
+                Logger.Warning($"SessionManager.Dispose: {ex.Message}");
+            }
+
+            _disposed = true;
+            GC.SuppressFinalize(this);
+        }
+
+        ~SessionManager() => Dispose();
+    }
+}

@@ -1,0 +1,496 @@
+================================================================================
+  IRCTC TATKAL BOT — COMPLETE TESTING GUIDE (STEP BY STEP)
+================================================================================
+
+This document explains how to test the IRCTCTatkalBot Windows desktop application
+from a clean start. It covers environment setup, the user interface, both start
+modes ("Start Now" and "Start (Scheduled)"), how to interpret results, where
+files are stored, and how to troubleshoot common failures.
+
+IMPORTANT — LEGAL AND ETHICAL NOTICE
+----------------------------------
+Automating access to IRCTC or attempting to gain unfair advantage in Tatkal
+booking may violate IRCTC terms of service, applicable law, or railway rules.
+This software is described here only for technical testing and understanding.
+You are solely responsible for compliance with IRCTC policies and local laws.
+The authors of this guide do not encourage misuse.
+
+
+================================================================================
+SECTION 1 — WHAT THIS APPLICATION DOES (HIGH LEVEL)
+================================================================================
+
+The application is a WPF (.NET) desktop program that:
+
+  1. Stores IRCTC accounts (encrypted passwords) and passenger details.
+  2. Uses Google Chrome controlled by Selenium WebDriver (ChromeDriver) to
+     open the IRCTC website like a normal browser session.
+  3. Can solve or assist with captcha (2Captcha, Anti-Captcha, or manual).
+  4. Runs a scripted booking flow (train search, passenger fill, payment phase).
+
+Testing is split into:
+  - "Infrastructure" tests: Chrome + ChromeDriver start (no IRCTC booking).
+  - "Immediate" tests: Start Now — runs the flow as soon as you click.
+  - "Scheduled" tests: Start (Scheduled) — waits until the Tatkal window in IST,
+    pre-logs in ~90 seconds before the window, then runs bookings at open.
+
+
+================================================================================
+SECTION 2 — PREREQUISITES BEFORE YOU START
+================================================================================
+
+2.1 OPERATING SYSTEM
+--------------------
+  - Windows 10 or later (the project targets net8.0-windows / WPF).
+
+2.2 RUNTIME AND BUILD (FOR DEVELOPERS / SOURCE TESTING)
+--------------------------------------------------------
+  - .NET 8 SDK installed (to build from source).
+  - Build command (from the folder containing IRCTCTatkalBot.csproj):
+        dotnet build -c Release
+  - Run the produced executable from:
+        IRCTCTatkalBot\bin\Release\net8.0-windows\IRCTCTatkalBot.exe
+    (or run from Visual Studio / dotnet run from the project directory.)
+
+2.3 GOOGLE CHROME
+-----------------
+  - Install Google Chrome (stable) from a normal installation so it exists in:
+        C:\Program Files\Google\Chrome\Application\chrome.exe
+    OR
+        C:\Program Files (x86)\Google\Chrome\Application\chrome.exe
+  - The application's pre-flight validation checks these paths. If Chrome is
+    only available elsewhere (portable build, custom path), use the setting
+    "Chrome executable (optional)" in the Settings section and enter the full
+    path to chrome.exe (see Section 4.4).
+
+2.4 NETWORK AND SECURITY SOFTWARE
+---------------------------------
+  - Stable internet access.
+  - Antivirus or "web shield" products sometimes block or slow localhost
+    traffic between the app and ChromeDriver. If you see errors like
+    "Cannot start the driver service on http://localhost:PORT/", try:
+      - Excluding the application folder, Chrome, and the Selenium driver cache
+        (often under %USERPROFILE%\.cache\selenium) from real-time scanning.
+      - Temporarily disabling VPN or testing on another network.
+  - Corporate proxies may interfere; account proxy fields exist for advanced use.
+
+2.5 IRCTC AND CAPTCHA (REAL TESTING)
+------------------------------------
+  - Valid IRCTC credentials for testing.
+  - For automated captcha: a 2Captcha API key and/or Anti-Captcha client key,
+    depending on the selected provider in Settings.
+  - For manual captcha: you will type the captcha in the visible Chrome window;
+    "Show Chrome windows" MUST be enabled (the app enforces this in validation).
+
+
+================================================================================
+SECTION 3 — WHERE THE APPLICATION STORES DATA (REFERENCE)
+================================================================================
+
+Knowing these paths helps testing, backup, and debugging.
+
+3.1 APPLICATION DATA (PER-USER, ROAMING PROFILE)
+------------------------------------------------
+  Base folder (Windows):
+    %AppData%\IRCTCTatkalBot
+
+  Files typically present:
+    settings.json      — Captcha provider, API keys, Show Chrome windows,
+                         Chrome binary path, retry defaults, driver tuning, etc.
+    accounts.json      — Saved IRCTC accounts (passwords encrypted).
+    passengers.json    — Saved passenger list from the UI.
+
+3.2 LOGS NEXT TO THE EXECUTABLE
+-------------------------------
+  Folder:
+    <folder containing IRCTCTatkalBot.exe>\Logs\
+
+  Files:
+    tatkal_YYYYMMDD.log     — Daily application log (Logger).
+    chromedriver_last.log   — Verbose ChromeDriver log (overwritten each run).
+
+3.3 SCREENSHOTS (DEBUGGING)
+-----------------------------
+    %AppData%\IRCTCTatkalBot\Screenshots\
+
+3.4 CHROME PROFILES (PER ACCOUNT)
+---------------------------------
+    %LocalAppData%\IRCTCTatkalBot\profiles\<account-guid>\
+  Each account uses an isolated user-data directory so sessions do not collide.
+
+
+================================================================================
+SECTION 4 — FIRST LAUNCH: ORIENTING THE USER INTERFACE
+================================================================================
+
+When you start IRCTCTatkalBot.exe, you should see:
+
+  LEFT PANEL (scrollable)
+  -----------------------
+    - Title and ACCOUNTS: list of accounts, Add Account, Remove.
+    - TRAIN CONFIG: From / To station codes, Journey Date, Train Number
+      (optional), Class, Passengers grid (add/remove rows).
+    - SETTINGS: Captcha provider, API keys, Show Chrome windows,
+      Chrome executable (optional), "Test Chrome driver" button.
+
+  RIGHT PANEL
+  -----------
+    - Top: Tatkal window time hint, large countdown/status text.
+    - Buttons:
+        ▶  Start (Scheduled)  — waits for scheduler / pre-login / window.
+        ⚡ Start Now          — runs immediately (no wait for Tatkal clock).
+        ⏹ Stop                — cancel running operation (enabled while running).
+    - BOOKING RESULTS: table (Account, Status, PNR, Elapsed, Phases, Error).
+    - LIVE LOG: scrolling list; Copy all / Copy line; context menu supported.
+
+If any control is unclear, refer to the labels in the application; this guide
+uses the same button names as the UI.
+
+
+================================================================================
+SECTION 5 — STEP-BY-STEP: FIRST-TIME SETUP (DO THIS BEFORE ANY BOOKING TEST)
+================================================================================
+
+STEP 5.1 — ADD AN IRCTC ACCOUNT
+--------------------------------
+  1. Click "+ Add Account" (or equivalent) in the ACCOUNTS section.
+  2. Enter username and password in the dialog and confirm.
+  3. Verify the account appears in the list.
+  4. Technical note: Accounts are saved to %AppData%\IRCTCTatkalBot\accounts.json.
+     Only accounts with IsActive = true participate in a run (default is true;
+     there is no separate "active" checkbox in the UI — new accounts are active).
+
+STEP 5.2 — CONFIGURE CAPTCHA (CHOOSE ONE PATH)
+----------------------------------------------
+  Path A — 2Captcha (automated)
+    - SETTINGS → Captcha provider: "2Captcha".
+    - Enter your API key in "API key (2Captcha)".
+    - "Show Chrome windows" can be on or off (headless allowed).
+
+  Path B — Anti-Captcha (automated)
+    - SETTINGS → Captcha provider: "Anti-Captcha".
+    - Enter the client key in "Anti-Captcha client key", OR put the key in the
+      main 2Captcha field if you use that fallback (see application behavior).
+
+  Path C — Manual (no API key)
+    - SETTINGS → Captcha provider: "Manual (no API key)".
+    - Turn ON "Show Chrome windows" (mandatory — validation will block you if
+      headless is on with manual captcha).
+
+STEP 5.3 — PASSENGERS
+---------------------
+  1. In TRAIN CONFIG → Passengers, ensure at least one row exists.
+  2. Fill Name (required — validation rejects blank names).
+  3. Set Age between 1 and 120.
+  4. Adjust Gender, Berth, ID fields as needed for your test.
+  5. Passengers auto-save to passengers.json after short idle delay.
+
+STEP 5.4 — TRAIN CONFIGURATION
+-------------------------------
+  1. From station: IRCTC station code (e.g. NDLS).
+  2. To station: IRCTC station code (e.g. MMCT).
+  3. Journey date: must not be in the past (validation).
+  4. Train number: optional — leave blank or set per your test case.
+  5. Class: SL, 3A, 2A, 1A, CC, 2S (dropdown). This affects which Tatkal OPEN
+     time the scheduler uses (see Section 7).
+
+STEP 5.5 — UPI (OPTIONAL)
+-------------------------
+  - If blank, you may enter UPI manually on the payment page in Chrome during
+    the test.
+
+
+================================================================================
+SECTION 6 — MANDATORY INFRASTRUCTURE TEST: "TEST CHROME DRIVER"
+================================================================================
+
+Before testing real IRCTC flows, verify that Chrome and ChromeDriver work on
+this PC.
+
+STEP 6.1 — WHEN TO RUN THIS
+----------------------------
+  Always run after:
+    - First install of the app on a machine.
+    - Chrome major update.
+    - Any "Cannot start the driver service" / localhost errors.
+
+STEP 6.2 — PROCEDURE
+--------------------
+  1. (Recommended) Turn ON "Show Chrome windows" so you can see Chrome open.
+  2. If Chrome is not in the default Program Files paths, set "Chrome executable
+     (optional)" to the full path of chrome.exe.
+  3. Click "Test Chrome driver".
+
+STEP 6.3 — EXPECTED SUCCESS
+----------------------------
+  - A message box stating Chrome and ChromeDriver started and loaded about:blank.
+  - Optional: a brief Chrome window flash (if not headless).
+  - Logs folder: chromedriver_last.log updated under the exe's Logs directory.
+
+STEP 6.4 — IF THIS FAILS
+-------------------------
+  - Read the error dialog (it includes troubleshooting bullets and may append
+    the tail of chromedriver_last.log).
+  - Fix environment (antivirus, VPN, Chrome path) before booking tests.
+  - Do not proceed to Start Now / Scheduled until this test passes.
+
+
+================================================================================
+SECTION 7 — UNDERSTANDING "START (SCHEDULED)" vs "START NOW"
+================================================================================
+
+7.1 TATKAL WINDOW TIMES (INDIA STANDARD TIME — IST)
+---------------------------------------------------
+The built-in scheduler uses:
+
+  - Classes SL and 2S  → Tatkal opens at 11:00:00 AM IST.
+  - All other classes in the UI (1A, 2A, 3A, CC, etc.) → 10:00:00 AM IST.
+
+The label "Tatkal window" on the main screen reflects the class you selected.
+
+7.2 START NOW (BUTTON: ⚡ Start Now)
+-------------------------------------
+  - Calls the booking orchestrator with IMMEDIATE mode.
+  - Does NOT wait for the clock to reach the Tatkal open time.
+  - For EACH ACTIVE ACCOUNT, it starts a browser session (staggered by a few
+    hundred milliseconds between accounts to reduce driver conflicts), runs the
+    booking engine, then closes the session.
+  - Use this for: debugging the flow, testing captcha, testing on non-Tatkal
+    hours (limited usefulness for real Tatkal), or quick smoke tests.
+
+7.3 START (SCHEDULED) (BUTTON: ▶ Start (Scheduled))
+---------------------------------------------------
+  - Uses India Standard Time.
+  - Computes the NEXT occurrence of the Tatkal open time for your selected class
+    (today if that time has not passed yet in IST, otherwise tomorrow).
+  - Displays messages such as when the window opens and when "pre-login" starts.
+
+  Timeline (conceptual):
+
+    A) WAIT until "Pre-login time" = Tatkal open time MINUS 90 seconds.
+       During this phase you may see countdown updates (e.g. T-mm:ss) in the UI.
+
+    B) At pre-login time (~90 seconds BEFORE window open):
+       "Pre-login phase started — opening browser sessions..."
+       The app starts ChromeDriver for each active account, navigates to IRCTC,
+       and attempts LOGIN (including captcha). Goal: be logged in BEFORE open.
+
+    C) WAIT until exact Tatkal window open instant (10:00 or 11:00 IST).
+
+    D) At window open:
+       "FIRING ALL BOOKING TASKS NOW!" — booking automation runs for each session.
+       If pre-login succeeded for that account, the run goes straight to TRAIN SEARCH
+       (login is not executed a second time on the first attempt). If pre-login
+       failed but the browser session stayed open, the booking step performs a normal
+       login before search. Retry attempts (failure with retries left) always run a
+       full login again so a dropped session during the Tatkal window is recovered.
+
+    E) Sessions are disposed; summary logged.
+
+  - Status message after pre-login: "X/Y pre-logins succeeded; Z browser session(s) open."
+    (Z may include sessions whose login failed — those booking tasks will attempt
+     login inside the booking flow.)
+
+  - Use this for: realistic Tatkal timing tests (requires you to run the app
+    before the window and leave it running through open).
+
+
+================================================================================
+SECTION 8 — STEP-BY-STEP: TESTING "START NOW" (IMMEDIATE MODE)
+================================================================================
+
+Follow these steps in order.
+
+STEP 8.1 — PRE-FLIGHT
+---------------------
+  1. Complete Section 5 (account, captcha, passengers, stations, date, class).
+  2. Complete Section 6 (Test Chrome driver) successfully.
+
+STEP 8.2 — START THE RUN
+------------------------
+  1. Ensure no other run is active (Stop if needed).
+  2. Click "⚡ Start Now".
+  3. If validation fails, a dialog lists ALL blocking issues (e.g. missing API
+     key, journey date in past, passenger name blank). Fix each line and retry.
+
+STEP 8.3 — OBSERVE UI DURING RUN
+---------------------------------
+  - "CountdownText" / status area may show orchestrator messages such as
+    "Immediate mode: Starting bookings now..."
+  - BOOKING RESULTS fills rows per account when the engine reports status.
+  - LIVE LOG shows newest lines at the TOP (reverse chronological order).
+  - Chrome windows may appear (if Show Chrome windows is ON).
+
+STEP 8.4 — STOP EARLY (OPTIONAL)
+---------------------------------
+  - Click "⏹ Stop" to cancel; booking tasks should wind down as cancellation
+    propagates.
+
+STEP 8.5 — REVIEW OUTCOMES
+---------------------------
+  - BOOKING RESULTS → Status column: Completed / Failed / etc.
+  - Error column: driver errors often prefixed with "Driver: ..." if Chrome
+    failed to start for that account only (other accounts may continue).
+  - PNR column: populated only on successful completion paths (depends on flow).
+
+STEP 8.6 — COLLECT ARTIFACTS IF SOMETHING FAILS
+------------------------------------------------
+  1. LIVE LOG → "Copy all" and paste into a text file.
+  2. Logs\tatkal_YYYYMMDD.log under the exe folder.
+  3. Logs\chromedriver_last.log
+  4. Screenshots folder under AppData if screenshots were taken.
+
+
+================================================================================
+SECTION 9 — STEP-BY-STEP: TESTING "START (SCHEDULED)"
+================================================================================
+
+STEP 9.1 — CLOCK AND TIMEZONE AWARENESS
+----------------------------------------
+  - The scheduler uses "India Standard Time" internally.
+  - Your PC should have correct date/time (Windows clock). Wrong OS time breaks
+    scheduled waits.
+
+STEP 9.2 — CHOOSE CLASS FOR THE CORRECT WINDOW
+-----------------------------------------------
+  - For an 11:00 IST window test, pick class SL or 2S in TRAIN CONFIG.
+  - For a 10:00 IST window test, pick an AC class (e.g. 3A).
+
+STEP 9.3 — PLAN YOUR TEST SESSION
+----------------------------------
+  Pre-login time = Tatkal window open time MINUS 90 seconds (same calendar day, IST).
+
+  Example — class 3A (10:00:00 AM IST window):
+    - Window open:     10:00:00 IST
+    - Pre-login starts: 09:58:30 IST  (90 seconds before open)
+
+  You may click "Start (Scheduled)" at any time BEFORE 09:58:30 IST on that day
+  (for example one hour earlier). The app will WAIT until 09:58:30 IST, then run
+  pre-login (open browsers, IRCTC login), then WAIT until 10:00:00 IST, then run
+  booking tasks.
+
+  If today's Tatkal window time has ALREADY passed in IST when you click Start,
+  the scheduler targets the NEXT day's window (see orchestrator / scheduler logic).
+
+  Example — class SL (11:00:00 AM IST window):
+    - Pre-login starts at 10:58:30 IST.
+
+STEP 9.4 — EXECUTION STEPS
+---------------------------
+  1. Complete Sections 5 and 6.
+  2. Click "▶ Start (Scheduled)".
+  3. Read the first orchestrator messages: they state when the Tatkal window
+     opens and when pre-login starts (in absolute local representation of IST).
+  4. Leave the machine awake; sleep/hibernate can interrupt waits.
+  5. Observe LIVE LOG for phase transitions.
+  6. At window open, watch BOOKING RESULTS and Chrome windows.
+
+STEP 9.5 — STOP
+---------------
+  - Use "⏹ Stop" if you need to abort the long wait (cancellation).
+
+
+================================================================================
+SECTION 10 — VALIDATION RULES (COMPLETE LIST FROM PRE-FLIGHT)
+================================================================================
+
+The application refuses to start until these pass:
+
+  - Google Chrome must exist in one of the standard Program Files paths UNLESS
+    you rely on manual path — note: validation only checks default paths; use
+    "Chrome executable (optional)" for non-standard installs and ensure Test
+    Chrome driver works.
+
+  - At least one active IRCTC account.
+
+  - Captcha:
+      Manual → Show Chrome windows MUST be true.
+      Anti-Captcha → Anti-Captcha client key OR fallback main API key present.
+      2Captcha (default) → TwoCaptcha API key present OR switch provider.
+
+  - From station non-blank.
+  - To station non-blank.
+  - Journey date >= today (calendar date).
+  - Train class selected.
+  - At least one passenger.
+  - Every passenger must have a non-blank name.
+  - Each passenger age between 1 and 120 inclusive.
+
+
+================================================================================
+SECTION 11 — TROUBLESHOOTING REFERENCE
+================================================================================
+
+11.1 "Cannot start the driver service on http://localhost:PORT/"
+-----------------------------------------------------------------
+  Meaning: ChromeDriver process may start, but Selenium cannot complete the HTTP
+  session handshake (often antivirus, VPN, or firewall affecting localhost).
+
+  Actions:
+    - Run "Test Chrome driver" after exclusions / VPN off.
+    - Enable visible Chrome ("Show Chrome windows").
+    - Increase delays / retries in settings.json (see Section 12).
+
+11.2 PRE-FLIGHT DIALOG BLOCKS START
+------------------------------------
+  Fix every bullet in the dialog; they are independent checks.
+
+11.3 CLIPBOARD "COPY LOG" FAILS
+--------------------------------
+  Another application may hold the Windows clipboard; close remote desktop
+  clipboard sync tools or retry.
+
+11.4 EMPTY RESULTS BUT LOG SHOWS ERRORS
+----------------------------------------
+  Check Error column; driver failures may produce a row per account with Status
+  Failed.
+
+11.5 SCHEDULED MODE "NOTHING HAPPENS"
+--------------------------------------
+  - Confirm IST window time vs your clock.
+  - You may be in the long wait until pre-login or window — read LIVE LOG.
+
+
+================================================================================
+SECTION 12 — ADVANCED: settings.json TUNING (OPTIONAL)
+================================================================================
+
+Location: %AppData%\IRCTCTatkalBot\settings.json
+
+Fields related to ChromeDriver reliability (defaults shown in code — yours may
+vary after first save):
+
+  ChromeBinaryPath                  — Full path to chrome.exe if needed.
+  StaggerMsBetweenDriverStarts      — Delay multiplier between accounts (~700 ms).
+  ChromeDriverStartupRetries        — Retry count for driver creation (~3).
+  ChromeDriverRetryDelayMs          — Pause between retries (~2000 ms).
+  ChromeDriverInitTimeoutSeconds    — Service initialization timeout (~120).
+  ChromeDriverCommandTimeoutSeconds — WebDriver command timeout (~180).
+  PostDriverStartCooldownMs         — Pause after successful driver start (~450).
+
+Also present:
+  DefaultRetries, RetryDelayMs — booking retry policy.
+  CaptchaProvider, TwoCaptchaApiKey, AntiCaptchaApiKey, ShowBrowserWindows.
+
+Edit JSON only with the app closed OR accept that the app may overwrite values
+on exit when it saves settings from the UI.
+
+
+================================================================================
+SECTION 13 — TEST CHECKLIST (PRINTABLE SUMMARY)
+================================================================================
+
+  [ ] .NET 8 / exe runs on target Windows PC.
+  [ ] Chrome installed (or ChromeBinaryPath set and verified).
+  [ ] Account added; passengers valid; stations and date valid.
+  [ ] Captcha provider configured per Section 5.2.
+  [ ] "Test Chrome driver" succeeds.
+  [ ] Start Now — observe logs and results (Section 8).
+  [ ] Start (Scheduled) — planned around IST Tatkal window (Section 9).
+  [ ] Stop button verified during a long run.
+  [ ] Logs and chromedriver_last.log retained for any failure report.
+
+
+================================================================================
+END OF TESTING GUIDE
+================================================================================

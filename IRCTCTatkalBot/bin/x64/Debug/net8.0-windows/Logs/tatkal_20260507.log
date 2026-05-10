@@ -1,0 +1,562 @@
+[00:01:40.947] [Info   ] === Application Starting ===
+[00:01:40.956] [Info   ] Loading AppSettings...
+[00:01:40.985] [Info   ] AppSettings loaded successfully
+[00:01:40.985] [Info   ] === Application Started Successfully ===
+[00:01:41.034] [Info   ] AccountManager: Loaded 1 account(s)
+[00:01:41.035] [Info   ] MainWindow: ViewModel created
+[00:01:41.263] [Info   ] MainWindow: Initialized XAML
+[00:01:41.264] [Info   ] MainWindow: DataContext set
+[00:06:26.216] [Info   ] === Application Starting ===
+[00:06:26.224] [Info   ] Loading AppSettings...
+[00:06:26.254] [Info   ] AppSettings loaded successfully
+[00:06:26.254] [Info   ] === Application Started Successfully ===
+[00:06:26.302] [Info   ] AccountManager: Loaded 1 account(s)
+[00:06:26.302] [Info   ] MainWindow: ViewModel created
+[00:06:26.718] [Error  ] MainWindow.Constructor XamlParseException: 'Set property 'System.Windows.Setter.Property' threw an exception.' Line number '152' and line position '26'.
+   at System.Windows.Markup.XamlReader.RewrapException(Exception e, IXamlLineInfo lineInfo, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.Load(XamlReader xamlReader, IXamlObjectWriterFactory writerFactory, Boolean skipJournaledProperties, Object rootObject, XamlObjectWriterSettings settings, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.LoadBaml(XamlReader xamlReader, Boolean skipJournaledProperties, Object rootObject, XamlAccessLevel accessLevel, Uri baseUri)
+   at System.Windows.Markup.XamlReader.LoadBaml(Stream stream, ParserContext parserContext, Object parent, Boolean closeStream)
+   at System.Windows.Application.LoadComponent(Object component, Uri resourceLocator)
+   at IRCTCTatkalBot.MainWindow.InitializeComponent() in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml:line 1
+   at IRCTCTatkalBot.MainWindow..ctor() in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml.cs:line 21
+[00:06:28.716] [Error  ] Dispatcher.UnhandledException XamlParseException: 'Set property 'System.Windows.Setter.Property' threw an exception.' Line number '152' and line position '26'.
+   at System.Windows.Markup.XamlReader.RewrapException(Exception e, IXamlLineInfo lineInfo, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.Load(XamlReader xamlReader, IXamlObjectWriterFactory writerFactory, Boolean skipJournaledProperties, Object rootObject, XamlObjectWriterSettings settings, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.LoadBaml(XamlReader xamlReader, Boolean skipJournaledProperties, Object rootObject, XamlAccessLevel accessLevel, Uri baseUri)
+   at System.Windows.Markup.XamlReader.LoadBaml(Stream stream, ParserContext parserContext, Object parent, Boolean closeStream)
+   at System.Windows.Application.LoadBamlStreamWithSyncInfo(Stream stream, ParserContext pc)
+   at System.Windows.Application.DoStartup()
+   at System.Windows.Application.<.ctor>b__1_0(Object unused)
+   at System.Windows.Threading.ExceptionWrapper.InternalRealCall(Delegate callback, Object args, Int32 numArgs)
+   at System.Windows.Threading.ExceptionWrapper.TryCatchWhen(Object source, Delegate callback, Object args, Int32 numArgs, Delegate catchHandler)
+[00:06:31.061] [Error  ] AppDomain.UnhandledException XamlParseException: 'Set property 'System.Windows.Setter.Property' threw an exception.' Line number '152' and line position '26'.
+   at System.Windows.Markup.XamlReader.RewrapException(Exception e, IXamlLineInfo lineInfo, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.Load(XamlReader xamlReader, IXamlObjectWriterFactory writerFactory, Boolean skipJournaledProperties, Object rootObject, XamlObjectWriterSettings settings, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.LoadBaml(XamlReader xamlReader, Boolean skipJournaledProperties, Object rootObject, XamlAccessLevel accessLevel, Uri baseUri)
+   at System.Windows.Markup.XamlReader.LoadBaml(Stream stream, ParserContext parserContext, Object parent, Boolean closeStream)
+   at System.Windows.Application.LoadBamlStreamWithSyncInfo(Stream stream, ParserContext pc)
+   at System.Windows.Application.DoStartup()
+   at System.Windows.Application.<.ctor>b__1_0(Object unused)
+   at System.Windows.Threading.ExceptionWrapper.InternalRealCall(Delegate callback, Object args, Int32 numArgs)
+   at System.Windows.Threading.ExceptionWrapper.TryCatchWhen(Object source, Delegate callback, Object args, Int32 numArgs, Delegate catchHandler)
+   at System.Windows.Threading.DispatcherOperation.InvokeImpl()
+   at MS.Internal.CulturePreservingExecutionContext.CallbackWrapper(Object obj)
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+   at MS.Internal.CulturePreservingExecutionContext.Run(CulturePreservingExecutionContext executionContext, ContextCallback callback, Object state)
+   at System.Windows.Threading.DispatcherOperation.Invoke()
+   at System.Windows.Threading.Dispatcher.ProcessQueue()
+   at System.Windows.Threading.Dispatcher.WndProcHook(IntPtr hwnd, Int32 msg, IntPtr wParam, IntPtr lParam, Boolean& handled)
+   at MS.Win32.HwndWrapper.WndProc(IntPtr hwnd, Int32 msg, IntPtr wParam, IntPtr lParam, Boolean& handled)
+   at MS.Win32.HwndSubclass.DispatcherCallbackOperation(Object o)
+   at System.Windows.Threading.ExceptionWrapper.InternalRealCall(Delegate callback, Object args, Int32 numArgs)
+   at System.Windows.Threading.ExceptionWrapper.TryCatchWhen(Object source, Delegate callback, Object args, Int32 numArgs, Delegate catchHandler)
+   at System.Windows.Threading.Dispatcher.LegacyInvokeImpl(DispatcherPriority priority, TimeSpan timeout, Delegate method, Object args, Int32 numArgs)
+   at MS.Win32.HwndSubclass.SubclassWndProc(IntPtr hwnd, Int32 msg, IntPtr wParam, IntPtr lParam)
+   at MS.Win32.UnsafeNativeMethods.DispatchMessage(MSG& msg)
+   at System.Windows.Threading.Dispatcher.PushFrameImpl(DispatcherFrame frame)
+   at System.Windows.Application.RunDispatcher(Object ignore)
+   at System.Windows.Application.RunInternal(Window window)
+   at IRCTCTatkalBot.App.Main()
+[00:06:36.780] [Info   ] === Application Starting ===
+[00:06:36.788] [Info   ] Loading AppSettings...
+[00:06:36.817] [Info   ] AppSettings loaded successfully
+[00:06:36.817] [Info   ] === Application Started Successfully ===
+[00:06:36.865] [Info   ] AccountManager: Loaded 1 account(s)
+[00:06:36.865] [Info   ] MainWindow: ViewModel created
+[00:06:37.086] [Error  ] MainWindow.Constructor XamlParseException: 'Set property 'System.Windows.Setter.Property' threw an exception.' Line number '152' and line position '26'.
+   at System.Windows.Markup.XamlReader.RewrapException(Exception e, IXamlLineInfo lineInfo, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.Load(XamlReader xamlReader, IXamlObjectWriterFactory writerFactory, Boolean skipJournaledProperties, Object rootObject, XamlObjectWriterSettings settings, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.LoadBaml(XamlReader xamlReader, Boolean skipJournaledProperties, Object rootObject, XamlAccessLevel accessLevel, Uri baseUri)
+   at System.Windows.Markup.XamlReader.LoadBaml(Stream stream, ParserContext parserContext, Object parent, Boolean closeStream)
+   at System.Windows.Application.LoadComponent(Object component, Uri resourceLocator)
+   at IRCTCTatkalBot.MainWindow.InitializeComponent() in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml:line 1
+   at IRCTCTatkalBot.MainWindow..ctor() in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml.cs:line 21
+[00:06:45.197] [Info   ] === Application Starting ===
+[00:06:45.205] [Info   ] Loading AppSettings...
+[00:06:45.234] [Info   ] AppSettings loaded successfully
+[00:06:45.234] [Info   ] === Application Started Successfully ===
+[00:06:45.282] [Info   ] AccountManager: Loaded 1 account(s)
+[00:06:45.282] [Info   ] MainWindow: ViewModel created
+[00:06:45.512] [Error  ] MainWindow.Constructor XamlParseException: 'Set property 'System.Windows.Setter.Property' threw an exception.' Line number '152' and line position '26'.
+   at System.Windows.Markup.XamlReader.RewrapException(Exception e, IXamlLineInfo lineInfo, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.Load(XamlReader xamlReader, IXamlObjectWriterFactory writerFactory, Boolean skipJournaledProperties, Object rootObject, XamlObjectWriterSettings settings, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.LoadBaml(XamlReader xamlReader, Boolean skipJournaledProperties, Object rootObject, XamlAccessLevel accessLevel, Uri baseUri)
+   at System.Windows.Markup.XamlReader.LoadBaml(Stream stream, ParserContext parserContext, Object parent, Boolean closeStream)
+   at System.Windows.Application.LoadComponent(Object component, Uri resourceLocator)
+   at IRCTCTatkalBot.MainWindow.InitializeComponent() in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml:line 1
+   at IRCTCTatkalBot.MainWindow..ctor() in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml.cs:line 21
+[00:06:47.493] [Error  ] Dispatcher.UnhandledException XamlParseException: 'Set property 'System.Windows.Setter.Property' threw an exception.' Line number '152' and line position '26'.
+   at System.Windows.Markup.XamlReader.RewrapException(Exception e, IXamlLineInfo lineInfo, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.Load(XamlReader xamlReader, IXamlObjectWriterFactory writerFactory, Boolean skipJournaledProperties, Object rootObject, XamlObjectWriterSettings settings, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.LoadBaml(XamlReader xamlReader, Boolean skipJournaledProperties, Object rootObject, XamlAccessLevel accessLevel, Uri baseUri)
+   at System.Windows.Markup.XamlReader.LoadBaml(Stream stream, ParserContext parserContext, Object parent, Boolean closeStream)
+   at System.Windows.Application.LoadBamlStreamWithSyncInfo(Stream stream, ParserContext pc)
+   at System.Windows.Application.DoStartup()
+   at System.Windows.Application.<.ctor>b__1_0(Object unused)
+   at System.Windows.Threading.ExceptionWrapper.InternalRealCall(Delegate callback, Object args, Int32 numArgs)
+   at System.Windows.Threading.ExceptionWrapper.TryCatchWhen(Object source, Delegate callback, Object args, Int32 numArgs, Delegate catchHandler)
+[00:06:54.203] [Error  ] AppDomain.UnhandledException XamlParseException: 'Set property 'System.Windows.Setter.Property' threw an exception.' Line number '152' and line position '26'.
+   at System.Windows.Markup.XamlReader.RewrapException(Exception e, IXamlLineInfo lineInfo, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.Load(XamlReader xamlReader, IXamlObjectWriterFactory writerFactory, Boolean skipJournaledProperties, Object rootObject, XamlObjectWriterSettings settings, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.LoadBaml(XamlReader xamlReader, Boolean skipJournaledProperties, Object rootObject, XamlAccessLevel accessLevel, Uri baseUri)
+   at System.Windows.Markup.XamlReader.LoadBaml(Stream stream, ParserContext parserContext, Object parent, Boolean closeStream)
+   at System.Windows.Application.LoadBamlStreamWithSyncInfo(Stream stream, ParserContext pc)
+   at System.Windows.Application.DoStartup()
+   at System.Windows.Application.<.ctor>b__1_0(Object unused)
+   at System.Windows.Threading.ExceptionWrapper.InternalRealCall(Delegate callback, Object args, Int32 numArgs)
+   at System.Windows.Threading.ExceptionWrapper.TryCatchWhen(Object source, Delegate callback, Object args, Int32 numArgs, Delegate catchHandler)
+   at System.Windows.Threading.DispatcherOperation.InvokeImpl()
+   at MS.Internal.CulturePreservingExecutionContext.CallbackWrapper(Object obj)
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+   at MS.Internal.CulturePreservingExecutionContext.Run(CulturePreservingExecutionContext executionContext, ContextCallback callback, Object state)
+   at System.Windows.Threading.DispatcherOperation.Invoke()
+   at System.Windows.Threading.Dispatcher.ProcessQueue()
+   at System.Windows.Threading.Dispatcher.WndProcHook(IntPtr hwnd, Int32 msg, IntPtr wParam, IntPtr lParam, Boolean& handled)
+   at MS.Win32.HwndWrapper.WndProc(IntPtr hwnd, Int32 msg, IntPtr wParam, IntPtr lParam, Boolean& handled)
+   at MS.Win32.HwndSubclass.DispatcherCallbackOperation(Object o)
+   at System.Windows.Threading.ExceptionWrapper.InternalRealCall(Delegate callback, Object args, Int32 numArgs)
+   at System.Windows.Threading.ExceptionWrapper.TryCatchWhen(Object source, Delegate callback, Object args, Int32 numArgs, Delegate catchHandler)
+   at System.Windows.Threading.Dispatcher.LegacyInvokeImpl(DispatcherPriority priority, TimeSpan timeout, Delegate method, Object args, Int32 numArgs)
+   at MS.Win32.HwndSubclass.SubclassWndProc(IntPtr hwnd, Int32 msg, IntPtr wParam, IntPtr lParam)
+   at MS.Win32.UnsafeNativeMethods.DispatchMessage(MSG& msg)
+   at System.Windows.Threading.Dispatcher.PushFrameImpl(DispatcherFrame frame)
+   at System.Windows.Application.RunDispatcher(Object ignore)
+   at System.Windows.Application.RunInternal(Window window)
+   at IRCTCTatkalBot.App.Main()
+[00:07:23.914] [Error  ] Dispatcher.UnhandledException XamlParseException: 'Set property 'System.Windows.Setter.Property' threw an exception.' Line number '152' and line position '26'.
+   at System.Windows.Markup.XamlReader.RewrapException(Exception e, IXamlLineInfo lineInfo, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.Load(XamlReader xamlReader, IXamlObjectWriterFactory writerFactory, Boolean skipJournaledProperties, Object rootObject, XamlObjectWriterSettings settings, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.LoadBaml(XamlReader xamlReader, Boolean skipJournaledProperties, Object rootObject, XamlAccessLevel accessLevel, Uri baseUri)
+   at System.Windows.Markup.XamlReader.LoadBaml(Stream stream, ParserContext parserContext, Object parent, Boolean closeStream)
+   at System.Windows.Application.LoadBamlStreamWithSyncInfo(Stream stream, ParserContext pc)
+   at System.Windows.Application.DoStartup()
+   at System.Windows.Application.<.ctor>b__1_0(Object unused)
+   at System.Windows.Threading.ExceptionWrapper.InternalRealCall(Delegate callback, Object args, Int32 numArgs)
+   at System.Windows.Threading.ExceptionWrapper.TryCatchWhen(Object source, Delegate callback, Object args, Int32 numArgs, Delegate catchHandler)
+[00:07:25.100] [Error  ] AppDomain.UnhandledException XamlParseException: 'Set property 'System.Windows.Setter.Property' threw an exception.' Line number '152' and line position '26'.
+   at System.Windows.Markup.XamlReader.RewrapException(Exception e, IXamlLineInfo lineInfo, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.Load(XamlReader xamlReader, IXamlObjectWriterFactory writerFactory, Boolean skipJournaledProperties, Object rootObject, XamlObjectWriterSettings settings, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.LoadBaml(XamlReader xamlReader, Boolean skipJournaledProperties, Object rootObject, XamlAccessLevel accessLevel, Uri baseUri)
+   at System.Windows.Markup.XamlReader.LoadBaml(Stream stream, ParserContext parserContext, Object parent, Boolean closeStream)
+   at System.Windows.Application.LoadBamlStreamWithSyncInfo(Stream stream, ParserContext pc)
+   at System.Windows.Application.DoStartup()
+   at System.Windows.Application.<.ctor>b__1_0(Object unused)
+   at System.Windows.Threading.ExceptionWrapper.InternalRealCall(Delegate callback, Object args, Int32 numArgs)
+   at System.Windows.Threading.ExceptionWrapper.TryCatchWhen(Object source, Delegate callback, Object args, Int32 numArgs, Delegate catchHandler)
+   at System.Windows.Threading.DispatcherOperation.InvokeImpl()
+   at MS.Internal.CulturePreservingExecutionContext.CallbackWrapper(Object obj)
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+   at MS.Internal.CulturePreservingExecutionContext.Run(CulturePreservingExecutionContext executionContext, ContextCallback callback, Object state)
+   at System.Windows.Threading.DispatcherOperation.Invoke()
+   at System.Windows.Threading.Dispatcher.ProcessQueue()
+   at System.Windows.Threading.Dispatcher.WndProcHook(IntPtr hwnd, Int32 msg, IntPtr wParam, IntPtr lParam, Boolean& handled)
+   at MS.Win32.HwndWrapper.WndProc(IntPtr hwnd, Int32 msg, IntPtr wParam, IntPtr lParam, Boolean& handled)
+   at MS.Win32.HwndSubclass.DispatcherCallbackOperation(Object o)
+   at System.Windows.Threading.ExceptionWrapper.InternalRealCall(Delegate callback, Object args, Int32 numArgs)
+   at System.Windows.Threading.ExceptionWrapper.TryCatchWhen(Object source, Delegate callback, Object args, Int32 numArgs, Delegate catchHandler)
+   at System.Windows.Threading.Dispatcher.LegacyInvokeImpl(DispatcherPriority priority, TimeSpan timeout, Delegate method, Object args, Int32 numArgs)
+   at MS.Win32.HwndSubclass.SubclassWndProc(IntPtr hwnd, Int32 msg, IntPtr wParam, IntPtr lParam)
+   at MS.Win32.UnsafeNativeMethods.DispatchMessage(MSG& msg)
+   at System.Windows.Threading.Dispatcher.PushFrameImpl(DispatcherFrame frame)
+   at System.Windows.Application.RunDispatcher(Object ignore)
+   at System.Windows.Application.RunInternal(Window window)
+   at IRCTCTatkalBot.App.Main()
+[00:08:18.359] [Info   ] === Application Starting ===
+[00:08:18.367] [Info   ] Loading AppSettings...
+[00:08:18.397] [Info   ] AppSettings loaded successfully
+[00:08:18.397] [Info   ] === Application Started Successfully ===
+[00:08:18.448] [Info   ] AccountManager: Loaded 1 account(s)
+[00:08:18.448] [Info   ] MainWindow: ViewModel created
+[00:08:18.697] [Info   ] MainWindow: Initialized XAML
+[00:08:18.697] [Info   ] MainWindow: DataContext set
+[00:10:29.125] [Info   ] === Application Starting ===
+[00:10:29.134] [Info   ] Loading AppSettings...
+[00:10:29.168] [Info   ] AppSettings loaded successfully
+[00:10:29.168] [Info   ] === Application Started Successfully ===
+[00:10:29.217] [Info   ] AccountManager: Loaded 1 account(s)
+[00:10:29.218] [Info   ] MainWindow: ViewModel created
+[00:10:29.454] [Info   ] MainWindow: Initialized XAML
+[00:10:29.455] [Info   ] MainWindow: DataContext set
+[00:13:40.111] [Info   ] === Application Starting ===
+[00:13:40.120] [Info   ] Loading AppSettings...
+[00:13:40.155] [Info   ] AppSettings loaded successfully
+[00:13:40.155] [Info   ] === Application Started Successfully ===
+[00:13:40.202] [Info   ] AccountManager: Loaded 1 account(s)
+[00:13:40.203] [Info   ] MainWindow: ViewModel created
+[00:13:40.429] [Info   ] MainWindow: Initialized XAML
+[00:13:40.430] [Info   ] MainWindow: DataContext set
+[00:15:16.734] [Info   ] === Application Starting ===
+[00:15:16.743] [Info   ] Loading AppSettings...
+[00:15:16.773] [Info   ] AppSettings loaded successfully
+[00:15:16.774] [Info   ] === Application Started Successfully ===
+[00:15:16.822] [Info   ] AccountManager: Loaded 1 account(s)
+[00:15:16.822] [Info   ] MainWindow: ViewModel created
+[00:15:17.060] [Info   ] MainWindow: Initialized XAML
+[00:15:17.060] [Info   ] MainWindow: DataContext set
+[00:17:04.040] [Info   ] === Application Starting ===
+[00:17:04.050] [Info   ] Loading AppSettings...
+[00:17:04.078] [Info   ] AppSettings loaded successfully
+[00:17:04.078] [Info   ] === Application Started Successfully ===
+[00:17:04.129] [Info   ] AccountManager: Loaded 1 account(s)
+[00:17:04.129] [Info   ] MainWindow: ViewModel created
+[00:17:04.380] [Info   ] MainWindow: Initialized XAML
+[00:17:04.380] [Info   ] MainWindow: DataContext set
+[00:19:17.206] [Info   ] === Application Starting ===
+[00:19:17.214] [Info   ] Loading AppSettings...
+[00:19:17.245] [Info   ] AppSettings loaded successfully
+[00:19:17.245] [Info   ] === Application Started Successfully ===
+[00:19:17.297] [Info   ] AccountManager: Loaded 1 account(s)
+[00:19:17.298] [Info   ] MainWindow: ViewModel created
+[00:19:17.526] [Info   ] MainWindow: Initialized XAML
+[00:19:17.527] [Info   ] MainWindow: DataContext set
+[00:21:15.341] [Info   ] === Application Starting ===
+[00:21:15.349] [Info   ] Loading AppSettings...
+[00:21:15.378] [Info   ] AppSettings loaded successfully
+[00:21:15.378] [Info   ] === Application Started Successfully ===
+[00:21:15.430] [Info   ] AccountManager: Loaded 1 account(s)
+[00:21:15.431] [Info   ] MainWindow: ViewModel created
+[00:21:15.662] [Info   ] MainWindow: Initialized XAML
+[00:21:15.662] [Info   ] MainWindow: DataContext set
+[03:04:53.914] [Info   ] === Application Starting ===
+[03:04:53.924] [Info   ] Loading AppSettings...
+[03:04:53.965] [Info   ] AppSettings loaded successfully
+[03:04:53.965] [Info   ] === Application Started Successfully ===
+[03:04:54.023] [Info   ] AccountManager: Loaded 1 account(s)
+[03:04:54.025] [Info   ] MainWindow: ViewModel created
+[03:04:54.261] [Info   ] MainWindow: Initialized XAML
+[03:04:54.261] [Info   ] MainWindow: DataContext set
+[03:16:40.305] [Info   ] === Application Starting ===
+[03:16:40.314] [Info   ] Loading AppSettings...
+[03:16:40.344] [Info   ] AppSettings loaded successfully
+[03:16:40.344] [Info   ] === Application Started Successfully ===
+[03:16:40.394] [Info   ] AccountManager: Loaded 1 account(s)
+[03:16:40.397] [Info   ] MainWindow: ViewModel created
+[03:16:40.564] [Info   ] MainWindow: Initialized XAML
+[03:16:40.564] [Info   ] MainWindow: DataContext set
+[03:41:24.181] [Info   ] === Application Starting ===
+[03:41:24.188] [Info   ] Loading AppSettings...
+[03:41:24.215] [Info   ] AppSettings loaded successfully
+[03:41:24.215] [Info   ] === Application Started Successfully ===
+[03:41:24.244] [Info   ] AccountManager: Loaded 1 account(s)
+[03:41:24.247] [Info   ] MainWindow: ViewModel created
+[03:41:24.391] [Info   ] MainWindow: Initialized XAML
+[03:41:24.391] [Info   ] MainWindow: DataContext set
+[03:44:14.313] [Info   ] === Application Starting ===
+[03:44:14.321] [Info   ] Loading AppSettings...
+[03:44:14.348] [Info   ] AppSettings loaded successfully
+[03:44:14.348] [Info   ] === Application Started Successfully ===
+[03:44:14.376] [Info   ] AccountManager: Loaded 1 account(s)
+[03:44:14.379] [Info   ] MainWindow: ViewModel created
+[03:44:14.529] [Info   ] MainWindow: Initialized XAML
+[03:44:14.529] [Info   ] MainWindow: DataContext set
+[03:51:12.337] [Info   ] === Application Starting ===
+[03:51:12.345] [Info   ] Loading AppSettings...
+[03:51:12.373] [Info   ] AppSettings loaded successfully
+[03:51:12.373] [Info   ] === Application Started Successfully ===
+[03:51:12.401] [Info   ] AccountManager: Loaded 1 account(s)
+[03:51:12.403] [Info   ] MainWindow: ViewModel created
+[03:51:12.548] [Info   ] MainWindow: Initialized XAML
+[03:51:12.548] [Info   ] MainWindow: DataContext set
+[03:55:21.772] [Info   ] === Application Starting ===
+[03:55:21.780] [Info   ] Loading AppSettings...
+[03:55:21.807] [Info   ] AppSettings loaded successfully
+[03:55:21.807] [Info   ] === Application Started Successfully ===
+[03:55:21.836] [Info   ] AccountManager: Loaded 1 account(s)
+[03:55:21.840] [Info   ] MainWindow: ViewModel created
+[03:55:22.005] [Info   ] MainWindow: Initialized XAML
+[03:55:22.005] [Info   ] MainWindow: DataContext set
+[03:55:38.684] [Info   ] AccountManager: Removed account a7276680-7787-46c4-8038-c69ab9ef75a8
+[04:00:37.530] [Info   ] === Application Starting ===
+[04:00:37.539] [Info   ] Loading AppSettings...
+[04:00:37.566] [Info   ] AppSettings loaded successfully
+[04:00:37.566] [Info   ] === Application Started Successfully ===
+[04:00:37.592] [Info   ] AccountManager: Loaded 0 account(s)
+[04:00:37.595] [Info   ] MainWindow: ViewModel created
+[04:00:37.740] [Info   ] MainWindow: Initialized XAML
+[04:00:37.740] [Info   ] MainWindow: DataContext set
+[04:02:12.738] [Info   ] AccountManager: Added account 'jupiterstar'
+[04:07:01.311] [Info   ] === Application Starting ===
+[04:07:01.319] [Info   ] Loading AppSettings...
+[04:07:01.347] [Info   ] AppSettings loaded successfully
+[04:07:01.347] [Info   ] === Application Started Successfully ===
+[04:07:01.376] [Info   ] AccountManager: Loaded 1 account(s)
+[04:07:01.380] [Info   ] MainWindow: ViewModel created
+[04:07:01.529] [Info   ] MainWindow: Initialized XAML
+[04:07:01.529] [Info   ] MainWindow: DataContext set
+[04:07:24.320] [Info   ] Orchestrator: Tatkal window opens at 10:00:00 IST
+[04:07:24.327] [Info   ] Orchestrator: Pre-login starts at 09:58:30 IST (351 min)
+[04:07:35.284] [Info   ] Booking stopped by user.
+[04:07:35.312] [Error  ] StartScheduledBtn_Click TaskCanceledException: A task was canceled.
+   at IRCTCTatkalBot.Services.BookingOrchestrator.WaitUntilAsync(DateTime target, CancellationToken ct) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\BookingOrchestrator.cs:line 187
+   at IRCTCTatkalBot.Services.BookingOrchestrator.RunAllAsync(List`1 configs, Boolean useScheduler, CancellationToken externalCt) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\BookingOrchestrator.cs:line 74
+   at IRCTCTatkalBot.ViewModels.MainViewModel.StartBookingAsync(Boolean immediate) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\ViewModels\MainViewModel.cs:line 329
+   at IRCTCTatkalBot.MainWindow.StartScheduledBtn_Click(Object sender, RoutedEventArgs e) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml.cs:line 39
+[04:07:42.109] [Info   ] AccountManager: Removed account 343e4629-6d90-4807-9a8f-1a704d140bd4
+[04:14:28.943] [Info   ] === Application Starting ===
+[04:14:28.951] [Info   ] Loading AppSettings...
+[04:14:28.978] [Info   ] AppSettings loaded successfully
+[04:14:28.978] [Info   ] === Application Started Successfully ===
+[04:14:29.004] [Info   ] AccountManager: Loaded 0 account(s)
+[04:14:29.007] [Info   ] MainWindow: ViewModel created
+[04:14:29.160] [Info   ] MainWindow: Initialized XAML
+[04:14:29.160] [Info   ] MainWindow: DataContext set
+[04:17:58.464] [Info   ] AccountManager: Added account 'chotubhaifinance'
+[04:18:14.227] [Info   ] Orchestrator: Immediate mode: Starting bookings now...
+[04:18:47.829] [Error  ] SessionManager.StartDriver WebDriverException: Cannot start the driver service on http://localhost:59498/
+   at OpenQA.Selenium.DriverService.Start()
+   at OpenQA.Selenium.Remote.DriverServiceCommandExecutor.Execute(Command commandToExecute)
+   at OpenQA.Selenium.WebDriver.Execute(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.StartSession(ICapabilities capabilities)
+   at OpenQA.Selenium.WebDriver..ctor(ICommandExecutor executor, ICapabilities capabilities)
+   at OpenQA.Selenium.Chromium.ChromiumDriver..ctor(ChromiumDriverService service, ChromiumOptions options, TimeSpan commandTimeout)
+   at OpenQA.Selenium.Chrome.ChromeDriver..ctor(ChromeDriverService service, ChromeOptions options, TimeSpan commandTimeout)
+   at OpenQA.Selenium.Chrome.ChromeDriver..ctor(ChromeOptions options)
+   at IRCTCTatkalBot.Services.SessionManager.StartDriver() in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 87
+[04:18:47.850] [Error  ] StartNowBtn_Click WebDriverException: Cannot start the driver service on http://localhost:59498/
+   at OpenQA.Selenium.DriverService.Start()
+   at OpenQA.Selenium.Remote.DriverServiceCommandExecutor.Execute(Command commandToExecute)
+   at OpenQA.Selenium.WebDriver.Execute(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.StartSession(ICapabilities capabilities)
+   at OpenQA.Selenium.WebDriver..ctor(ICommandExecutor executor, ICapabilities capabilities)
+   at OpenQA.Selenium.Chromium.ChromiumDriver..ctor(ChromiumDriverService service, ChromiumOptions options, TimeSpan commandTimeout)
+   at OpenQA.Selenium.Chrome.ChromeDriver..ctor(ChromeDriverService service, ChromeOptions options, TimeSpan commandTimeout)
+   at OpenQA.Selenium.Chrome.ChromeDriver..ctor(ChromeOptions options)
+   at IRCTCTatkalBot.Services.SessionManager.StartDriver() in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 87
+   at IRCTCTatkalBot.Services.BookingOrchestrator.<>c__DisplayClass10_0.<<RunAllAsync>b__7>d.MoveNext() in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\BookingOrchestrator.cs:line 135
+--- End of stack trace from previous location ---
+   at IRCTCTatkalBot.Services.BookingOrchestrator.RunAllAsync(List`1 configs, Boolean useScheduler, CancellationToken externalCt) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\BookingOrchestrator.cs:line 141
+   at IRCTCTatkalBot.ViewModels.MainViewModel.StartBookingAsync(Boolean immediate) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\ViewModels\MainViewModel.cs:line 329
+   at IRCTCTatkalBot.MainWindow.StartNowBtn_Click(Object sender, RoutedEventArgs e) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml.cs:line 52
+[04:20:11.028] [Info   ] SessionManager: Driver disposed
+[04:27:32.964] [Info   ] === Application Starting ===
+[04:27:32.972] [Info   ] Loading AppSettings...
+[04:27:33.000] [Info   ] AppSettings loaded successfully
+[04:27:33.000] [Info   ] === Application Started Successfully ===
+[04:27:33.029] [Info   ] AccountManager: Loaded 1 account(s)
+[04:27:33.032] [Info   ] MainWindow: ViewModel created
+[04:27:33.212] [Info   ] MainWindow: Initialized XAML
+[04:27:33.212] [Info   ] MainWindow: DataContext set
+[04:32:45.719] [Info   ] Orchestrator: Immediate mode: Starting bookings now...
+[04:34:16.298] [Error  ] SessionManager.StartDriver WebDriverException: Cannot start the driver service on http://127.0.0.1:59225/
+   at OpenQA.Selenium.DriverService.Start()
+   at OpenQA.Selenium.Remote.DriverServiceCommandExecutor.Execute(Command commandToExecute)
+   at OpenQA.Selenium.WebDriver.Execute(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.StartSession(ICapabilities capabilities)
+   at OpenQA.Selenium.WebDriver..ctor(ICommandExecutor executor, ICapabilities capabilities)
+   at OpenQA.Selenium.Chromium.ChromiumDriver..ctor(ChromiumDriverService service, ChromiumOptions options, TimeSpan commandTimeout)
+   at OpenQA.Selenium.Chrome.ChromeDriver..ctor(ChromeDriverService service, ChromeOptions options, TimeSpan commandTimeout)
+   at OpenQA.Selenium.Chrome.ChromeDriver..ctor(ChromeDriverService service, ChromeOptions options)
+   at IRCTCTatkalBot.Services.SessionManager.StartDriver() in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 95
+[04:34:16.300] [Error  ] StartNowBtn_Click WebDriverException: Cannot start the driver service on http://127.0.0.1:59225/
+   at OpenQA.Selenium.DriverService.Start()
+   at OpenQA.Selenium.Remote.DriverServiceCommandExecutor.Execute(Command commandToExecute)
+   at OpenQA.Selenium.WebDriver.Execute(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.StartSession(ICapabilities capabilities)
+   at OpenQA.Selenium.WebDriver..ctor(ICommandExecutor executor, ICapabilities capabilities)
+   at OpenQA.Selenium.Chromium.ChromiumDriver..ctor(ChromiumDriverService service, ChromiumOptions options, TimeSpan commandTimeout)
+   at OpenQA.Selenium.Chrome.ChromeDriver..ctor(ChromeDriverService service, ChromeOptions options, TimeSpan commandTimeout)
+   at OpenQA.Selenium.Chrome.ChromeDriver..ctor(ChromeDriverService service, ChromeOptions options)
+   at IRCTCTatkalBot.Services.SessionManager.StartDriver() in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 95
+   at IRCTCTatkalBot.Services.BookingOrchestrator.<>c__DisplayClass10_0.<<RunAllAsync>b__7>d.MoveNext() in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\BookingOrchestrator.cs:line 135
+--- End of stack trace from previous location ---
+   at IRCTCTatkalBot.Services.BookingOrchestrator.RunAllAsync(List`1 configs, Boolean useScheduler, CancellationToken externalCt) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\BookingOrchestrator.cs:line 141
+   at IRCTCTatkalBot.ViewModels.MainViewModel.StartBookingAsync(Boolean immediate) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\ViewModels\MainViewModel.cs:line 329
+   at IRCTCTatkalBot.MainWindow.StartNowBtn_Click(Object sender, RoutedEventArgs e) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml.cs:line 53
+[04:34:33.925] [Error  ] CopyLogAll_Click COMException: OpenClipboard Failed (0x800401D0 (CLIPBRD_E_CANT_OPEN))
+   at System.Runtime.InteropServices.Marshal.ThrowExceptionForHR(Int32 errorCode, IntPtr errorInfo)
+   at System.Windows.Clipboard.Flush()
+   at IRCTCTatkalBot.MainWindow.CopyLogAll_Click(Object sender, RoutedEventArgs e) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml.cs:line 99
+[04:49:01.951] [Info   ] SessionManager: Driver disposed
+[05:12:24.518] [Info   ] === Application Starting ===
+[05:12:24.526] [Info   ] Loading AppSettings...
+[05:12:24.553] [Info   ] AppSettings loaded successfully
+[05:12:24.553] [Info   ] === Application Started Successfully ===
+[05:12:24.581] [Info   ] AccountManager: Loaded 1 account(s)
+[05:12:24.584] [Info   ] MainWindow: ViewModel created
+[05:12:24.734] [Info   ] MainWindow: Initialized XAML
+[05:12:24.734] [Info   ] MainWindow: DataContext set
+[05:12:29.756] [Info   ] Orchestrator: Immediate mode: Starting bookings now...
+[05:15:27.411] [Error  ] SessionManager.StartDriver WebDriverException: Cannot start the driver service on http://127.0.0.1:51303/
+   at OpenQA.Selenium.DriverService.Start()
+   at OpenQA.Selenium.Remote.DriverServiceCommandExecutor.ExecuteAsync(Command commandToExecute)
+   at OpenQA.Selenium.WebDriver.ExecuteAsync(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.Execute(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.StartSession(ICapabilities capabilities)
+   at OpenQA.Selenium.WebDriver..ctor(ICommandExecutor executor, ICapabilities capabilities)
+   at OpenQA.Selenium.Chromium.ChromiumDriver..ctor(ChromiumDriverService service, ChromiumOptions options, TimeSpan commandTimeout)
+   at OpenQA.Selenium.Chrome.ChromeDriver..ctor(ChromeDriverService service, ChromeOptions options, TimeSpan commandTimeout)
+   at IRCTCTatkalBot.Services.SessionManager.StartDriver() in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 93
+[05:15:27.413] [Error  ] StartNowBtn_Click WebDriverException: Cannot start the driver service on http://127.0.0.1:51303/
+   at OpenQA.Selenium.DriverService.Start()
+   at OpenQA.Selenium.Remote.DriverServiceCommandExecutor.ExecuteAsync(Command commandToExecute)
+   at OpenQA.Selenium.WebDriver.ExecuteAsync(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.Execute(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.StartSession(ICapabilities capabilities)
+   at OpenQA.Selenium.WebDriver..ctor(ICommandExecutor executor, ICapabilities capabilities)
+   at OpenQA.Selenium.Chromium.ChromiumDriver..ctor(ChromiumDriverService service, ChromiumOptions options, TimeSpan commandTimeout)
+   at OpenQA.Selenium.Chrome.ChromeDriver..ctor(ChromeDriverService service, ChromeOptions options, TimeSpan commandTimeout)
+   at IRCTCTatkalBot.Services.SessionManager.StartDriver() in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 93
+   at IRCTCTatkalBot.Services.BookingOrchestrator.<>c__DisplayClass10_0.<<RunAllAsync>b__7>d.MoveNext() in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\BookingOrchestrator.cs:line 135
+--- End of stack trace from previous location ---
+   at IRCTCTatkalBot.Services.BookingOrchestrator.RunAllAsync(List`1 configs, Boolean useScheduler, CancellationToken externalCt) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\BookingOrchestrator.cs:line 141
+   at IRCTCTatkalBot.ViewModels.MainViewModel.StartBookingAsync(Boolean immediate) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\ViewModels\MainViewModel.cs:line 329
+   at IRCTCTatkalBot.MainWindow.StartNowBtn_Click(Object sender, RoutedEventArgs e) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml.cs:line 54
+[05:36:56.014] [Info   ] === Application Starting ===
+[05:36:56.022] [Info   ] Loading AppSettings...
+[05:36:56.051] [Info   ] AppSettings loaded successfully
+[05:36:56.051] [Info   ] === Application Started Successfully ===
+[05:36:56.081] [Info   ] AccountManager: Loaded 1 account(s)
+[05:36:56.085] [Info   ] MainWindow: ViewModel created
+[05:36:56.243] [Info   ] MainWindow: Initialized XAML
+[05:36:56.243] [Info   ] MainWindow: DataContext set
+[05:36:59.735] [Info   ] Orchestrator: Immediate mode: Starting bookings now...
+[05:39:27.743] [Error  ] SessionManager.StartDriver WebDriverException: Cannot start the driver service on http://localhost:51517/
+   at OpenQA.Selenium.DriverService.Start()
+   at OpenQA.Selenium.Remote.DriverServiceCommandExecutor.ExecuteAsync(Command commandToExecute)
+   at OpenQA.Selenium.WebDriver.ExecuteAsync(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.Execute(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.StartSession(ICapabilities capabilities)
+   at OpenQA.Selenium.WebDriver..ctor(ICommandExecutor executor, ICapabilities capabilities)
+   at OpenQA.Selenium.Chromium.ChromiumDriver..ctor(ChromiumDriverService service, ChromiumOptions options, TimeSpan commandTimeout)
+   at OpenQA.Selenium.Chrome.ChromeDriver..ctor(ChromeDriverService service, ChromeOptions options, TimeSpan commandTimeout)
+   at IRCTCTatkalBot.Services.SessionManager.StartDriver() in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 111
+[05:39:27.743] [Warning] ChromeDriver tip: concurrent browser starts on Windows often cause this even when the driver prints "started successfully". Try enabling Show Chrome windows (disable headless), run one account first, or exclude chromedriver from real-time antivirus.
+[05:39:27.744] [Error  ] StartNowBtn_Click WebDriverException: Cannot start the driver service on http://localhost:51517/
+   at OpenQA.Selenium.DriverService.Start()
+   at OpenQA.Selenium.Remote.DriverServiceCommandExecutor.ExecuteAsync(Command commandToExecute)
+   at OpenQA.Selenium.WebDriver.ExecuteAsync(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.Execute(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.StartSession(ICapabilities capabilities)
+   at OpenQA.Selenium.WebDriver..ctor(ICommandExecutor executor, ICapabilities capabilities)
+   at OpenQA.Selenium.Chromium.ChromiumDriver..ctor(ChromiumDriverService service, ChromiumOptions options, TimeSpan commandTimeout)
+   at OpenQA.Selenium.Chrome.ChromeDriver..ctor(ChromeDriverService service, ChromeOptions options, TimeSpan commandTimeout)
+   at IRCTCTatkalBot.Services.SessionManager.StartDriver() in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 111
+   at IRCTCTatkalBot.Services.BookingOrchestrator.<>c__DisplayClass10_0.<<RunAllAsync>b__7>d.MoveNext() in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\BookingOrchestrator.cs:line 135
+--- End of stack trace from previous location ---
+   at IRCTCTatkalBot.Services.BookingOrchestrator.RunAllAsync(List`1 configs, Boolean useScheduler, CancellationToken externalCt) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\BookingOrchestrator.cs:line 141
+   at IRCTCTatkalBot.ViewModels.MainViewModel.StartBookingAsync(Boolean immediate) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\ViewModels\MainViewModel.cs:line 329
+   at IRCTCTatkalBot.MainWindow.StartNowBtn_Click(Object sender, RoutedEventArgs e) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml.cs:line 54
+[05:48:37.647] [Info   ] Orchestrator: Immediate mode: Starting bookings now...
+[05:52:13.709] [Error  ] SessionManager.StartDriver WebDriverException: Cannot start the driver service on http://localhost:49826/
+   at OpenQA.Selenium.DriverService.Start()
+   at OpenQA.Selenium.Remote.DriverServiceCommandExecutor.ExecuteAsync(Command commandToExecute)
+   at OpenQA.Selenium.WebDriver.ExecuteAsync(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.Execute(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.StartSession(ICapabilities capabilities)
+   at OpenQA.Selenium.WebDriver..ctor(ICommandExecutor executor, ICapabilities capabilities)
+   at OpenQA.Selenium.Chromium.ChromiumDriver..ctor(ChromiumDriverService service, ChromiumOptions options, TimeSpan commandTimeout)
+   at OpenQA.Selenium.Chrome.ChromeDriver..ctor(ChromeDriverService service, ChromeOptions options, TimeSpan commandTimeout)
+   at IRCTCTatkalBot.Services.SessionManager.StartDriver() in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 111
+[05:52:13.710] [Warning] ChromeDriver tip: concurrent browser starts on Windows often cause this even when the driver prints "started successfully". Try enabling Show Chrome windows (disable headless), run one account first, or exclude chromedriver from real-time antivirus.
+[05:52:13.710] [Error  ] StartNowBtn_Click WebDriverException: Cannot start the driver service on http://localhost:49826/
+   at OpenQA.Selenium.DriverService.Start()
+   at OpenQA.Selenium.Remote.DriverServiceCommandExecutor.ExecuteAsync(Command commandToExecute)
+   at OpenQA.Selenium.WebDriver.ExecuteAsync(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.Execute(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.StartSession(ICapabilities capabilities)
+   at OpenQA.Selenium.WebDriver..ctor(ICommandExecutor executor, ICapabilities capabilities)
+   at OpenQA.Selenium.Chromium.ChromiumDriver..ctor(ChromiumDriverService service, ChromiumOptions options, TimeSpan commandTimeout)
+   at OpenQA.Selenium.Chrome.ChromeDriver..ctor(ChromeDriverService service, ChromeOptions options, TimeSpan commandTimeout)
+   at IRCTCTatkalBot.Services.SessionManager.StartDriver() in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 111
+   at IRCTCTatkalBot.Services.BookingOrchestrator.<>c__DisplayClass10_0.<<RunAllAsync>b__7>d.MoveNext() in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\BookingOrchestrator.cs:line 135
+--- End of stack trace from previous location ---
+   at IRCTCTatkalBot.Services.BookingOrchestrator.RunAllAsync(List`1 configs, Boolean useScheduler, CancellationToken externalCt) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\BookingOrchestrator.cs:line 141
+   at IRCTCTatkalBot.ViewModels.MainViewModel.StartBookingAsync(Boolean immediate) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\ViewModels\MainViewModel.cs:line 329
+   at IRCTCTatkalBot.MainWindow.StartNowBtn_Click(Object sender, RoutedEventArgs e) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml.cs:line 54
+[05:56:27.866] [Info   ] SessionManager: Driver disposed
+[05:56:27.867] [Info   ] SessionManager: Driver disposed
+[06:25:48.070] [Info   ] === Application Starting ===
+[06:25:48.078] [Info   ] Loading AppSettings...
+[06:25:48.637] [Info   ] AppSettings loaded successfully
+[06:25:48.637] [Info   ] === Application Started Successfully ===
+[06:25:48.670] [Info   ] AccountManager: Loaded 1 account(s)
+[06:25:48.673] [Info   ] MainWindow: ViewModel created
+[06:25:48.845] [Info   ] MainWindow: Initialized XAML
+[06:25:48.845] [Info   ] MainWindow: DataContext set
+[21:34:57.530] [Info   ] === Application Starting ===
+[21:34:57.538] [Info   ] Loading AppSettings...
+[21:34:58.310] [Info   ] AppSettings loaded successfully
+[21:34:58.310] [Info   ] === Application Started Successfully ===
+[21:34:58.350] [Info   ] AccountManager: Loaded 1 account(s)
+[21:34:58.359] [Info   ] MainWindow: ViewModel created
+[21:34:58.589] [Info   ] MainWindow: Initialized XAML
+[21:34:58.589] [Info   ] MainWindow: DataContext set
+[21:35:26.933] [Warning] ChromeDriverFactory: attempt 1/3 — An unknown exception was encountered sending an HTTP request to the remote WebDriver server for URL http://localhost:53778/session. The exception message was: An error occurred while sending the request.
+[21:35:26.934] [Warning] ChromeDriverFactory: retry 2/3 after 2000ms delay.
+[21:35:33.040] [Error  ] TestChromeBtn_Click InvalidOperationException: session not created: Chrome failed to start: crashed.
+  (session not created: DevToolsActivePort file doesn't exist)
+  (The process started from chrome location C:\Program Files\Google\Chrome\Application\chrome.exe is no longer running, so ChromeDriver is assuming that Chrome has crashed.) (SessionNotCreated)
+   at OpenQA.Selenium.WebDriver.UnpackAndThrowOnError(Response errorResponse, String commandToExecute)
+   at OpenQA.Selenium.WebDriver.ExecuteAsync(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.Execute(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.StartSession(ICapabilities capabilities)
+   at OpenQA.Selenium.WebDriver..ctor(ICommandExecutor executor, ICapabilities capabilities)
+   at OpenQA.Selenium.Chromium.ChromiumDriver..ctor(ChromiumDriverService service, ChromiumOptions options, TimeSpan commandTimeout)
+   at OpenQA.Selenium.Chrome.ChromeDriver..ctor(ChromeDriverService service, ChromeOptions options, TimeSpan commandTimeout)
+   at OpenQA.Selenium.Chrome.ChromeDriver..ctor(ChromeOptions options)
+   at IRCTCTatkalBot.Services.ChromeDriverFactory.Create(ChromeOptions options) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\ChromeDriverFactory.cs:line 52
+   at IRCTCTatkalBot.ViewModels.MainViewModel.<>c__DisplayClass98_0.<TestChromeDriverAsync>b__0() in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\ViewModels\MainViewModel.cs:line 385
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& currentTaskSlot, Thread threadPoolThread)
+--- End of stack trace from previous location ---
+   at IRCTCTatkalBot.MainWindow.TestChromeBtn_Click(Object sender, RoutedEventArgs e) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml.cs:line 75
+[21:36:05.082] [Info   ] Orchestrator: Tatkal window opens at 10:00:00 IST
+[21:36:05.083] [Info   ] Orchestrator: Pre-login starts at 09:58:30 IST (742 min)
+[21:36:36.267] [Info   ] Booking stopped by user.
+[21:36:36.267] [Info   ] StartBookingAsync: cancelled.
+[21:36:41.116] [Info   ] Orchestrator: Immediate mode: Starting bookings now...
+[21:36:43.294] [Info   ] SessionManager: ChromeDriver started for chotubhaifinance
+[21:36:43.310] [Info   ] Orchestrator: Attempt 1/3 for account bfaabd7e-dbf3-4901-bb33-57d6a2586360
+[21:36:43.313] [Info   ] BookingEngine: → LoggingIn
+[21:36:43.749] [Info   ] SessionManager: Logging in chotubhaifinance...
+[21:36:46.826] [Error  ] SessionManager.LoginAsync WebDriverException: unknown error: net::ERR_CONNECTION_CLOSED
+  (Session info: chrome=148.0.7778.96)
+   at OpenQA.Selenium.WebDriver.UnpackAndThrowOnError(Response errorResponse, String commandToExecute)
+   at OpenQA.Selenium.WebDriver.ExecuteAsync(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.Navigator.GoToUrlAsync(String url)
+   at OpenQA.Selenium.Navigator.<>c__DisplayClass6_0.<<GoToUrl>b__0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at OpenQA.Selenium.Navigator.GoToUrl(String url)
+   at IRCTCTatkalBot.Services.SessionManager.LoginAsync(CancellationToken ct) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 119
+[21:36:46.969] [Info   ] SessionManager: Screenshot saved to C:\Users\Jupiter\AppData\Roaming\IRCTCTatkalBot\Screenshots\login_error_20260507_213646.png
+[21:36:47.012] [Error  ] BookingEngine: FAILED – Login failed
+[21:36:47.012] [Warning] Orchestrator: Retrying in 500ms...
+[21:36:47.521] [Info   ] Orchestrator: Attempt 2/3 for account bfaabd7e-dbf3-4901-bb33-57d6a2586360
+[21:36:47.521] [Info   ] BookingEngine: → LoggingIn
+[21:36:47.521] [Info   ] SessionManager: Logging in chotubhaifinance...
+[21:36:47.920] [Error  ] SessionManager.LoginAsync WebDriverException: unknown error: net::ERR_CONNECTION_ABORTED
+  (Session info: chrome=148.0.7778.96)
+   at OpenQA.Selenium.WebDriver.UnpackAndThrowOnError(Response errorResponse, String commandToExecute)
+   at OpenQA.Selenium.WebDriver.ExecuteAsync(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.Navigator.GoToUrlAsync(String url)
+   at OpenQA.Selenium.Navigator.<>c__DisplayClass6_0.<<GoToUrl>b__0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at OpenQA.Selenium.Navigator.GoToUrl(String url)
+   at IRCTCTatkalBot.Services.SessionManager.LoginAsync(CancellationToken ct) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 119
+[21:36:48.050] [Info   ] SessionManager: Screenshot saved to C:\Users\Jupiter\AppData\Roaming\IRCTCTatkalBot\Screenshots\login_error_20260507_213647.png
+[21:36:48.050] [Error  ] BookingEngine: FAILED – Login failed
+[21:36:48.050] [Warning] Orchestrator: Retrying in 500ms...
+[21:36:48.555] [Info   ] Orchestrator: Attempt 3/3 for account bfaabd7e-dbf3-4901-bb33-57d6a2586360
+[21:36:48.556] [Info   ] BookingEngine: → LoggingIn
+[21:36:48.556] [Info   ] SessionManager: Logging in chotubhaifinance...
+[21:36:49.230] [Error  ] SessionManager.LoginAsync WebDriverException: unknown error: net::ERR_CONNECTION_CLOSED
+  (Session info: chrome=148.0.7778.96)
+   at OpenQA.Selenium.WebDriver.UnpackAndThrowOnError(Response errorResponse, String commandToExecute)
+   at OpenQA.Selenium.WebDriver.ExecuteAsync(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.Navigator.GoToUrlAsync(String url)
+   at OpenQA.Selenium.Navigator.<>c__DisplayClass6_0.<<GoToUrl>b__0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at OpenQA.Selenium.Navigator.GoToUrl(String url)
+   at IRCTCTatkalBot.Services.SessionManager.LoginAsync(CancellationToken ct) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 119
+[21:36:49.319] [Info   ] SessionManager: Screenshot saved to C:\Users\Jupiter\AppData\Roaming\IRCTCTatkalBot\Screenshots\login_error_20260507_213649.png
+[21:36:49.319] [Error  ] BookingEngine: FAILED – Login failed
+[21:36:50.630] [Info   ] SessionManager: Driver disposed

@@ -1,0 +1,218 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows;
+using IRCTCTatkalBot.Helpers;
+using IRCTCTatkalBot.Models;
+using IRCTCTatkalBot.Services;
+
+namespace IRCTCTatkalBot.ViewModels
+{
+    /// <summary>
+    /// Main application ViewModel — binds the UI to the booking orchestrator.
+    /// </summary>
+    public class MainViewModel : INotifyPropertyChanged
+    {
+        // ── Services ──────────────────────────────────────────────────
+        public AccountManager AccountManager { get; } = new();
+        private BookingOrchestrator? _orchestrator;
+        private CancellationTokenSource _cts = new();
+
+        // ── Observable Collections ────────────────────────────────────
+        public ObservableCollection<Account> Accounts { get; } = new();
+        public ObservableCollection<BookingResult> Results { get; } = new();
+        public ObservableCollection<string> Logs { get; } = new();
+
+        // ── Booking Config (bound to UI) ──────────────────────────────
+        private string _fromStation = "NDLS";
+        public string FromStation
+        {
+            get => _fromStation;
+            set { _fromStation = value; OnPropertyChanged(); }
+        }
+
+        private string _toStation = "MMCT";
+        public string ToStation
+        {
+            get => _toStation;
+            set { _toStation = value; OnPropertyChanged(); }
+        }
+
+        private DateTime _journeyDate = DateTime.Today.AddDays(1);
+        public DateTime JourneyDate
+        {
+            get => _journeyDate;
+            set { _journeyDate = value; OnPropertyChanged(); }
+        }
+
+        private string _trainNumber = "";
+        public string TrainNumber
+        {
+            get => _trainNumber;
+            set { _trainNumber = value; OnPropertyChanged(); }
+        }
+
+        private string _trainClass = "3A";
+        public string TrainClass
+        {
+            get => _trainClass;
+            set
+            {
+                _trainClass = value;
+                OnPropertyChanged();
+                WindowTimeDisplay = Scheduler.GetWindowForClass(value).ToString(@"hh\:mm") + " AM IST";
+            }
+        }
+
+        private string _upiId = "";
+        public string UpiId
+        {
+            get => _upiId;
+            set { _upiId = value; OnPropertyChanged(); }
+        }
+
+        private string _windowTimeDisplay = "10:00 AM IST";
+        public string WindowTimeDisplay
+        {
+            get => _windowTimeDisplay;
+            set { _windowTimeDisplay = value; OnPropertyChanged(); }
+        }
+
+        private string _countdownText = "--:--";
+        public string CountdownText
+        {
+            get => _countdownText;
+            set { _countdownText = value; OnPropertyChanged(); }
+        }
+
+        private bool _isRunning;
+        public bool IsRunning
+        {
+            get => _isRunning;
+            set { _isRunning = value; OnPropertyChanged(); OnPropertyChanged(nameof(CanStart)); }
+        }
+
+        public bool CanStart => !IsRunning;
+
+        // ── Settings ──────────────────────────────────────────────────
+        public string CaptchaApiKey
+        {
+            get => AppSettings.Instance.TwoCaptchaApiKey;
+            set { AppSettings.Instance.TwoCaptchaApiKey = value; AppSettings.Instance.Save(); }
+        }
+
+        // ── Constructor ───────────────────────────────────────────────
+
+        public MainViewModel()
+        {
+            // Mirror AccountManager list into observable collection
+            foreach (var a in AccountManager.Accounts)
+                Accounts.Add(a);
+
+            // Subscribe to logger
+            Logger.OnLog += (msg, level) =>
+            {
+                Application.Current?.Dispatcher.BeginInvoke(() =>
+                {
+                    Logs.Insert(0, msg); // newest on top
+                    if (Logs.Count > 500) Logs.RemoveAt(Logs.Count - 1);
+                });
+            };
+        }
+
+        // ── Commands ──────────────────────────────────────────────────
+
+        /// <summary>
+        /// Starts the full booking flow for all active accounts.
+        /// </summary>
+        public async Task StartBookingAsync(bool immediate = false)
+        {
+            if (IsRunning) return;
+            IsRunning = true;
+            Results.Clear();
+            _cts = new CancellationTokenSource();
+
+            _orchestrator = new BookingOrchestrator(AccountManager, CaptchaApiKey);
+
+            _orchestrator.OnStatusMessage += msg =>
+                Application.Current?.Dispatcher.BeginInvoke(() => CountdownText = msg);
+
+            _orchestrator.OnBookingResult += result =>
+                Application.Current?.Dispatcher.BeginInvoke(() => Results.Add(result));
+
+            // Build a config per active account
+            var configs = new List<BookingConfig>();
+            foreach (var account in AccountManager.GetActive())
+            {
+                configs.Add(new BookingConfig
+                {
+                    AccountId = account.Id,
+                    FromStation = FromStation,
+                    ToStation = ToStation,
+                    JourneyDate = JourneyDate,
+                    TrainNumber = TrainNumber,
+                    TrainClass = TrainClass,
+                    Quota = "TATKAL",
+                    PaymentMethod = "UPI",
+                    UpiId = UpiId,
+                    Passengers = GetPassengerList(),
+                    TargetOpenTime = Scheduler.GetWindowForClass(TrainClass),
+                    AutoSchedule = !immediate,
+                    MaxRetries = AppSettings.Instance.DefaultRetries,
+                    RetryDelayMs = AppSettings.Instance.RetryDelayMs
+                });
+            }
+
+            try
+            {
+                await _orchestrator.RunAllAsync(configs, !immediate, _cts.Token);
+            }
+            finally
+            {
+                IsRunning = false;
+                CountdownText = "Done";
+            }
+        }
+
+        public void StopBooking()
+        {
+            _orchestrator?.Cancel();
+            _cts.Cancel();
+            IsRunning = false;
+            Logger.Info("Booking stopped by user.");
+        }
+
+        // Placeholder — in the real UI, passengers come from a DataGrid
+        private List<Passenger> GetPassengerList() => new()
+        {
+            new Passenger { Name = "PASSENGER ONE", Age = 30, Gender = "M" }
+        };
+
+        // ── Account Helpers ───────────────────────────────────────────
+
+        public void AddAccount(string username, string password)
+        {
+            var account = AccountManager.Add(
+                displayName: username,  // Use username as display name
+                username: username, 
+                plainPassword: password);
+            Accounts.Add(account);
+        }
+
+        public void RemoveAccount(Account account)
+        {
+            AccountManager.Remove(account.Id);
+            Accounts.Remove(account);
+        }
+
+        // ── INotifyPropertyChanged ────────────────────────────────────
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+        protected void OnPropertyChanged([CallerMemberName] string? name = null)
+            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    }
+}

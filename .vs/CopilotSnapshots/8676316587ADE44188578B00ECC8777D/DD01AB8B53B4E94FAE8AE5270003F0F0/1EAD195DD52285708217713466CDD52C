@@ -1,0 +1,42 @@
+﻿using System.Windows;
+
+namespace IRCTCTatkalBot.Views
+{
+    public partial class AddAccountDialog : Window
+    {
+        public string Username    => UsernameBox.Text.Trim();
+        public string Password    => PasswordBox.Password;
+
+        public AddAccountDialog()
+        {
+            InitializeComponent();
+            Focus();
+            UsernameBox.Focus();
+        }
+
+        private void AddBtn_Click(object sender, RoutedEventArgs e)
+        {
+            // Validate required fields
+            if (string.IsNullOrWhiteSpace(Username))
+            {
+                MessageBox.Show("Username is required.", "Validation Error",
+                                MessageBoxButton.OK, MessageBoxImage.Warning);
+                UsernameBox.Focus();
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(Password))
+            {
+                MessageBox.Show("Password is required.", "Validation Error",
+                                MessageBoxButton.OK, MessageBoxImage.Warning);
+                PasswordBox.Focus();
+                return;
+            }
+
+            DialogResult = true;
+        }
+
+        private void CancelBtn_Click(object sender, RoutedEventArgs e)
+            => DialogResult = false;
+    }
+}

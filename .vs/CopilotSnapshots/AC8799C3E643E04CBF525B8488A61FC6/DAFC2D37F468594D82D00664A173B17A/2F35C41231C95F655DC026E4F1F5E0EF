@@ -1,0 +1,42 @@
+﻿using System;
+using System.Windows;
+using IRCTCTatkalBot.Helpers;
+
+namespace IRCTCTatkalBot
+{
+    public partial class App : Application
+    {
+        protected override void OnStartup(StartupEventArgs e)
+        {
+            base.OnStartup(e);
+
+            // Add exception handlers
+            AppDomain.CurrentDomain.UnhandledException += (s, ex) =>
+            {
+                Logger.Error((Exception)ex.ExceptionObject, "AppDomain.UnhandledException");
+                MessageBox.Show($"Fatal Error:\n{ex.ExceptionObject}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            };
+
+            DispatcherUnhandledException += (s, ex) =>
+            {
+                Logger.Error(ex.Exception, "Dispatcher.UnhandledException");
+                MessageBox.Show($"UI Error:\n{ex.Exception.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                ex.Handled = false; // Let it crash so we can see the issue
+            };
+
+            try
+            {
+                // Load settings at startup
+                _ = AppSettings.Instance;
+                Logger.Info("App: Startup successful");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "App.OnStartup");
+                MessageBox.Show($"Startup Error:\n{ex.Message}\n\n{ex.StackTrace}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                throw;
+            }
+        }
+    }
+}
+

@@ -1,0 +1,146 @@
+[22:59:12.441] [Info   ] === Application Starting ===
+[22:59:12.450] [Info   ] Loading AppSettings...
+[22:59:12.481] [Info   ] AppSettings loaded successfully
+[22:59:12.481] [Info   ] === Application Started Successfully ===
+[22:59:12.749] [Error  ] ClassCombo_SelectionChanged NullReferenceException: Object reference not set to an instance of an object.
+   at IRCTCTatkalBot.MainWindow.ClassCombo_SelectionChanged(Object sender, SelectionChangedEventArgs e) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml.cs:line 98
+[22:59:12.770] [Info   ] MainWindow: Initialized XAML
+[22:59:12.780] [Info   ] AccountManager: Loaded 1 account(s)
+[22:59:12.780] [Info   ] MainWindow: ViewModel created
+[22:59:12.781] [Info   ] MainWindow: DataContext set
+[23:05:55.962] [Info   ] === Application Starting ===
+[23:05:55.971] [Info   ] Loading AppSettings...
+[23:05:56.001] [Info   ] AppSettings loaded successfully
+[23:05:56.001] [Info   ] === Application Started Successfully ===
+[23:05:56.257] [Error  ] ClassCombo_SelectionChanged NullReferenceException: Object reference not set to an instance of an object.
+   at IRCTCTatkalBot.MainWindow.ClassCombo_SelectionChanged(Object sender, SelectionChangedEventArgs e) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml.cs:line 98
+[23:05:56.275] [Info   ] MainWindow: Initialized XAML
+[23:05:56.286] [Info   ] AccountManager: Loaded 1 account(s)
+[23:05:56.287] [Info   ] MainWindow: ViewModel created
+[23:05:56.287] [Info   ] MainWindow: DataContext set
+[23:09:14.626] [Info   ] === Application Starting ===
+[23:09:14.634] [Info   ] Loading AppSettings...
+[23:09:14.666] [Info   ] AppSettings loaded successfully
+[23:09:14.666] [Info   ] === Application Started Successfully ===
+[23:09:14.923] [Error  ] ClassCombo_SelectionChanged NullReferenceException: Object reference not set to an instance of an object.
+   at IRCTCTatkalBot.MainWindow.ClassCombo_SelectionChanged(Object sender, SelectionChangedEventArgs e) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml.cs:line 98
+[23:09:14.942] [Info   ] MainWindow: Initialized XAML
+[23:09:14.953] [Info   ] AccountManager: Loaded 1 account(s)
+[23:09:14.953] [Info   ] MainWindow: ViewModel created
+[23:09:14.953] [Info   ] MainWindow: DataContext set
+[23:10:19.867] [Info   ] Orchestrator: Tatkal window opens at 10:00:00 IST
+[23:10:19.889] [Info   ] Orchestrator: Pre-login starts at 09:58:30 IST (648 min)
+[23:10:37.400] [Info   ] Booking stopped by user.
+[23:10:37.422] [Error  ] StartScheduledBtn_Click TaskCanceledException: A task was canceled.
+   at IRCTCTatkalBot.Services.BookingOrchestrator.WaitUntilAsync(DateTime target, CancellationToken ct) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\BookingOrchestrator.cs:line 190
+   at IRCTCTatkalBot.Services.BookingOrchestrator.RunAllAsync(List`1 configs, Boolean useScheduler, CancellationToken externalCt) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\BookingOrchestrator.cs:line 77
+   at IRCTCTatkalBot.ViewModels.MainViewModel.StartBookingAsync(Boolean immediate) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\ViewModels\MainViewModel.cs:line 172
+   at IRCTCTatkalBot.MainWindow.StartScheduledBtn_Click(Object sender, RoutedEventArgs e) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml.cs:line 39
+[23:10:42.496] [Info   ] Orchestrator: Immediate mode: Starting bookings now...
+[23:10:51.596] [Error  ] SessionManager.StartDriver InvalidOperationException: session not created: This version of ChromeDriver only supports Chrome version 123
+Current browser version is 147.0.7727.138 with binary path C:\Program Files\Google\Chrome\Application\chrome.exe (SessionNotCreated)
+   at OpenQA.Selenium.WebDriver.UnpackAndThrowOnError(Response errorResponse, String commandToExecute)
+   at OpenQA.Selenium.WebDriver.Execute(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.StartSession(ICapabilities capabilities)
+   at OpenQA.Selenium.WebDriver..ctor(ICommandExecutor executor, ICapabilities capabilities)
+   at OpenQA.Selenium.Chromium.ChromiumDriver..ctor(ChromiumDriverService service, ChromiumOptions options, TimeSpan commandTimeout)
+   at OpenQA.Selenium.Chrome.ChromeDriver..ctor(ChromeDriverService service, ChromeOptions options, TimeSpan commandTimeout)
+   at OpenQA.Selenium.Chrome.ChromeDriver..ctor(ChromeOptions options)
+   at IRCTCTatkalBot.Services.SessionManager.StartDriver() in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 74
+[23:10:51.616] [Error  ] StartNowBtn_Click InvalidOperationException: session not created: This version of ChromeDriver only supports Chrome version 123
+Current browser version is 147.0.7727.138 with binary path C:\Program Files\Google\Chrome\Application\chrome.exe (SessionNotCreated)
+   at OpenQA.Selenium.WebDriver.UnpackAndThrowOnError(Response errorResponse, String commandToExecute)
+   at OpenQA.Selenium.WebDriver.Execute(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.StartSession(ICapabilities capabilities)
+   at OpenQA.Selenium.WebDriver..ctor(ICommandExecutor executor, ICapabilities capabilities)
+   at OpenQA.Selenium.Chromium.ChromiumDriver..ctor(ChromiumDriverService service, ChromiumOptions options, TimeSpan commandTimeout)
+   at OpenQA.Selenium.Chrome.ChromeDriver..ctor(ChromeDriverService service, ChromeOptions options, TimeSpan commandTimeout)
+   at OpenQA.Selenium.Chrome.ChromeDriver..ctor(ChromeOptions options)
+   at IRCTCTatkalBot.Services.SessionManager.StartDriver() in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 74
+   at IRCTCTatkalBot.Services.BookingOrchestrator.<>c__DisplayClass11_0.<<RunAllAsync>b__7>d.MoveNext() in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\BookingOrchestrator.cs:line 138
+--- End of stack trace from previous location ---
+   at IRCTCTatkalBot.Services.BookingOrchestrator.RunAllAsync(List`1 configs, Boolean useScheduler, CancellationToken externalCt) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\BookingOrchestrator.cs:line 144
+   at IRCTCTatkalBot.ViewModels.MainViewModel.StartBookingAsync(Boolean immediate) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\ViewModels\MainViewModel.cs:line 172
+   at IRCTCTatkalBot.MainWindow.StartNowBtn_Click(Object sender, RoutedEventArgs e) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml.cs:line 52
+[23:10:52.487] [Info   ] SessionManager: Driver disposed
+[23:22:46.955] [Info   ] === Application Starting ===
+[23:22:46.963] [Info   ] Loading AppSettings...
+[23:22:46.995] [Info   ] AppSettings loaded successfully
+[23:22:46.995] [Info   ] === Application Started Successfully ===
+[23:22:47.259] [Error  ] ClassCombo_SelectionChanged NullReferenceException: Object reference not set to an instance of an object.
+   at IRCTCTatkalBot.MainWindow.ClassCombo_SelectionChanged(Object sender, SelectionChangedEventArgs e) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml.cs:line 98
+[23:22:47.281] [Info   ] MainWindow: Initialized XAML
+[23:22:47.292] [Info   ] AccountManager: Loaded 1 account(s)
+[23:22:47.292] [Info   ] MainWindow: ViewModel created
+[23:22:47.292] [Info   ] MainWindow: DataContext set
+[23:32:05.105] [Info   ] === Application Starting ===
+[23:32:05.113] [Info   ] Loading AppSettings...
+[23:32:05.144] [Info   ] AppSettings loaded successfully
+[23:32:05.144] [Info   ] === Application Started Successfully ===
+[23:32:05.418] [Error  ] ClassCombo_SelectionChanged NullReferenceException: Object reference not set to an instance of an object.
+   at IRCTCTatkalBot.MainWindow.ClassCombo_SelectionChanged(Object sender, SelectionChangedEventArgs e) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml.cs:line 98
+[23:32:05.441] [Info   ] MainWindow: Initialized XAML
+[23:32:05.453] [Info   ] AccountManager: Loaded 1 account(s)
+[23:32:05.453] [Info   ] MainWindow: ViewModel created
+[23:32:05.454] [Info   ] MainWindow: DataContext set
+[23:32:21.199] [Info   ] Orchestrator: Tatkal window opens at 10:00:00 IST
+[23:32:21.201] [Info   ] Orchestrator: Pre-login starts at 09:58:30 IST (626 min)
+[23:32:29.227] [Info   ] Booking stopped by user.
+[23:32:29.229] [Error  ] StartScheduledBtn_Click TaskCanceledException: A task was canceled.
+   at IRCTCTatkalBot.Services.BookingOrchestrator.WaitUntilAsync(DateTime target, CancellationToken ct) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\BookingOrchestrator.cs:line 190
+   at IRCTCTatkalBot.Services.BookingOrchestrator.RunAllAsync(List`1 configs, Boolean useScheduler, CancellationToken externalCt) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\BookingOrchestrator.cs:line 77
+   at IRCTCTatkalBot.ViewModels.MainViewModel.StartBookingAsync(Boolean immediate) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\ViewModels\MainViewModel.cs:line 172
+   at IRCTCTatkalBot.MainWindow.StartScheduledBtn_Click(Object sender, RoutedEventArgs e) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml.cs:line 39
+[23:32:32.620] [Info   ] Orchestrator: Immediate mode: Starting bookings now...
+[23:32:48.422] [Error  ] SessionManager.StartDriver InvalidOperationException: session not created: This version of ChromeDriver only supports Chrome version 123
+Current browser version is 147.0.7727.138 with binary path C:\Program Files\Google\Chrome\Application\chrome.exe (SessionNotCreated)
+   at OpenQA.Selenium.WebDriver.UnpackAndThrowOnError(Response errorResponse, String commandToExecute)
+   at OpenQA.Selenium.WebDriver.Execute(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.StartSession(ICapabilities capabilities)
+   at OpenQA.Selenium.WebDriver..ctor(ICommandExecutor executor, ICapabilities capabilities)
+   at OpenQA.Selenium.Chromium.ChromiumDriver..ctor(ChromiumDriverService service, ChromiumOptions options, TimeSpan commandTimeout)
+   at OpenQA.Selenium.Chrome.ChromeDriver..ctor(ChromeDriverService service, ChromeOptions options, TimeSpan commandTimeout)
+   at OpenQA.Selenium.Chrome.ChromeDriver..ctor(ChromeOptions options)
+   at IRCTCTatkalBot.Services.SessionManager.StartDriver() in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 74
+[23:32:48.423] [Error  ] StartNowBtn_Click InvalidOperationException: session not created: This version of ChromeDriver only supports Chrome version 123
+Current browser version is 147.0.7727.138 with binary path C:\Program Files\Google\Chrome\Application\chrome.exe (SessionNotCreated)
+   at OpenQA.Selenium.WebDriver.UnpackAndThrowOnError(Response errorResponse, String commandToExecute)
+   at OpenQA.Selenium.WebDriver.Execute(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.StartSession(ICapabilities capabilities)
+   at OpenQA.Selenium.WebDriver..ctor(ICommandExecutor executor, ICapabilities capabilities)
+   at OpenQA.Selenium.Chromium.ChromiumDriver..ctor(ChromiumDriverService service, ChromiumOptions options, TimeSpan commandTimeout)
+   at OpenQA.Selenium.Chrome.ChromeDriver..ctor(ChromeDriverService service, ChromeOptions options, TimeSpan commandTimeout)
+   at OpenQA.Selenium.Chrome.ChromeDriver..ctor(ChromeOptions options)
+   at IRCTCTatkalBot.Services.SessionManager.StartDriver() in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 74
+   at IRCTCTatkalBot.Services.BookingOrchestrator.<>c__DisplayClass11_0.<<RunAllAsync>b__7>d.MoveNext() in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\BookingOrchestrator.cs:line 138
+--- End of stack trace from previous location ---
+   at IRCTCTatkalBot.Services.BookingOrchestrator.RunAllAsync(List`1 configs, Boolean useScheduler, CancellationToken externalCt) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\BookingOrchestrator.cs:line 144
+   at IRCTCTatkalBot.ViewModels.MainViewModel.StartBookingAsync(Boolean immediate) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\ViewModels\MainViewModel.cs:line 172
+   at IRCTCTatkalBot.MainWindow.StartNowBtn_Click(Object sender, RoutedEventArgs e) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml.cs:line 52
+[23:32:48.978] [Info   ] SessionManager: Driver disposed
+[23:51:55.913] [Info   ] === Application Starting ===
+[23:51:55.921] [Info   ] Loading AppSettings...
+[23:51:55.950] [Info   ] AppSettings loaded successfully
+[23:51:55.950] [Info   ] === Application Started Successfully ===
+[23:51:56.219] [Error  ] ClassCombo_SelectionChanged NullReferenceException: Object reference not set to an instance of an object.
+   at IRCTCTatkalBot.MainWindow.ClassCombo_SelectionChanged(Object sender, SelectionChangedEventArgs e) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml.cs:line 98
+[23:51:56.239] [Info   ] MainWindow: Initialized XAML
+[23:51:56.251] [Info   ] AccountManager: Loaded 1 account(s)
+[23:51:56.251] [Info   ] MainWindow: ViewModel created
+[23:51:56.251] [Info   ] MainWindow: DataContext set
+[23:56:01.337] [Info   ] === Application Starting ===
+[23:56:01.345] [Info   ] Loading AppSettings...
+[23:56:01.376] [Info   ] AppSettings loaded successfully
+[23:56:01.376] [Info   ] === Application Started Successfully ===
+[23:56:01.426] [Info   ] AccountManager: Loaded 1 account(s)
+[23:56:01.427] [Info   ] MainWindow: ViewModel created
+[23:56:01.675] [Info   ] MainWindow: Initialized XAML
+[23:56:01.675] [Info   ] MainWindow: DataContext set
+[23:58:07.142] [Info   ] === Application Starting ===
+[23:58:07.150] [Info   ] Loading AppSettings...
+[23:58:07.184] [Info   ] AppSettings loaded successfully
+[23:58:07.184] [Info   ] === Application Started Successfully ===
+[23:58:07.236] [Info   ] AccountManager: Loaded 1 account(s)
+[23:58:07.236] [Info   ] MainWindow: ViewModel created
+[23:58:07.487] [Info   ] MainWindow: Initialized XAML
+[23:58:07.487] [Info   ] MainWindow: DataContext set

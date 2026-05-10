@@ -1,0 +1,109 @@
+﻿using System;
+using System.Windows;
+using System.Windows.Controls;
+using IRCTCTatkalBot.ViewModels;
+using IRCTCTatkalBot.Views;
+using IRCTCTatkalBot.Helpers;
+
+namespace IRCTCTatkalBot
+{
+    public partial class MainWindow : Window
+    {
+        private readonly MainViewModel _vm;
+
+        public MainWindow()
+        {
+            try
+            {
+                InitializeComponent();
+                Logger.Info("MainWindow: Initialized XAML");
+
+                _vm = new MainViewModel();
+                Logger.Info("MainWindow: ViewModel created");
+
+                DataContext = _vm;
+                Logger.Info("MainWindow: DataContext set");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "MainWindow.Constructor");
+                MessageBox.Show($"MainWindow Error:\n{ex.Message}\n\n{ex.StackTrace}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                throw;
+            }
+        }
+
+        private async void StartScheduledBtn_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                await _vm.StartBookingAsync(immediate: false);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "StartScheduledBtn_Click");
+                MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async void StartNowBtn_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                await _vm.StartBookingAsync(immediate: true);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "StartNowBtn_Click");
+                MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void StopBtn_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                _vm.StopBooking();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "StopBtn_Click");
+                MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void AddAccountBtn_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dialog = new AddAccountDialog();
+                if (dialog.ShowDialog() == true)
+                {
+                    _vm.AddAccount(
+                        dialog.DisplayName,
+                        dialog.Username,
+                        dialog.Password,
+                        dialog.PhoneNumber,
+                        dialog.Proxy);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "AddAccountBtn_Click");
+                MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void ClassCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            try
+            {
+                if (ClassCombo.SelectedItem is ComboBoxItem item)
+                    _vm.TrainClass = item.Content.ToString()!;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "ClassCombo_SelectionChanged");
+            }
+        }
+    }
+}

@@ -1,0 +1,33 @@
+[22:54:22.060] [Info   ] === Application Starting ===
+[22:54:22.072] [Info   ] Loading AppSettings...
+[22:54:22.641] [Info   ] AppSettings loaded successfully
+[22:54:22.641] [Info   ] === Application Started Successfully ===
+[22:54:22.708] [Info   ] AccountManager: Loaded 1 account(s)
+[22:54:22.717] [Info   ] MainWindow: ViewModel created
+[22:54:22.948] [Info   ] MainWindow: Initialized XAML
+[22:54:22.948] [Info   ] MainWindow: DataContext set
+[22:54:29.051] [Info   ] Orchestrator: Immediate mode: Starting bookings now...
+[22:54:37.070] [Info   ] SessionManager: ChromeDriver started for chotubhaifinance
+[22:54:37.071] [Info   ] Orchestrator: Attempt 1/3 for account bfaabd7e-dbf3-4901-bb33-57d6a2586360
+[22:54:37.073] [Info   ] BookingEngine: → LoggingIn
+[22:54:37.075] [Info   ] SessionManager: Logging in chotubhaifinance...
+[22:54:43.655] [Error  ] SessionManager.LoginAsync WebDriverException: An unknown exception was encountered sending an HTTP request to the remote WebDriver server for URL http://localhost:60384/session/07b6b961ad378af698332e01a939e20f/elements. The exception message was: No connection could be made because the target machine actively refused it. (localhost:60384)
+   at OpenQA.Selenium.Remote.HttpCommandExecutor.ExecuteAsync(Command commandToExecute)
+   at OpenQA.Selenium.Remote.DriverServiceCommandExecutor.ExecuteAsync(Command commandToExecute)
+   at OpenQA.Selenium.WebDriver.ExecuteAsync(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.Execute(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.FindElements(String mechanism, String value)
+   at OpenQA.Selenium.By.<.ctor>b__11_1(ISearchContext context)
+   at OpenQA.Selenium.By.FindElements(ISearchContext context)
+   at OpenQA.Selenium.WebDriver.FindElements(By by)
+   at IRCTCTatkalBot.Services.SessionManager.IsUserIdFieldVisible(IWebDriver driver) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 280
+   at IRCTCTatkalBot.Services.SessionManager.LoginAsync(CancellationToken ct) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 131
+[22:54:45.687] [Error  ] SessionManager.TakeScreenshot WebDriverException: An unknown exception was encountered sending an HTTP request to the remote WebDriver server for URL http://localhost:60384/session/07b6b961ad378af698332e01a939e20f/screenshot. The exception message was: No connection could be made because the target machine actively refused it. (localhost:60384)
+   at OpenQA.Selenium.Remote.HttpCommandExecutor.ExecuteAsync(Command commandToExecute)
+   at OpenQA.Selenium.Remote.DriverServiceCommandExecutor.ExecuteAsync(Command commandToExecute)
+   at OpenQA.Selenium.WebDriver.ExecuteAsync(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.Execute(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.GetScreenshot()
+   at IRCTCTatkalBot.Services.SessionManager.TakeScreenshot(String label) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 480
+[22:54:45.687] [Error  ] BookingEngine: FAILED – Login failed
+[22:54:45.688] [Warning] Orchestrator: Retrying in 500ms...

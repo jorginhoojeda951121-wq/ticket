@@ -1,0 +1,117 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "F:\\reverse\\IRCTCTatkalBot\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}|IRCTCTatkalBot\\IRCTCTatkalBot.csproj|f:\\reverse\\irctctatkalbot\\irctctatkalbot\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}|IRCTCTatkalBot\\IRCTCTatkalBot.csproj|solutionrelative:irctctatkalbot\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}|IRCTCTatkalBot\\IRCTCTatkalBot.csproj|f:\\reverse\\irctctatkalbot\\irctctatkalbot\\helpers\\selecthelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}|IRCTCTatkalBot\\IRCTCTatkalBot.csproj|solutionrelative:irctctatkalbot\\helpers\\selecthelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}|IRCTCTatkalBot\\IRCTCTatkalBot.csproj|f:\\reverse\\irctctatkalbot\\irctctatkalbot\\irctctatkalbot.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}|IRCTCTatkalBot\\IRCTCTatkalBot.csproj|solutionrelative:irctctatkalbot\\irctctatkalbot.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}|IRCTCTatkalBot\\IRCTCTatkalBot.csproj|f:\\reverse\\irctctatkalbot\\irctctatkalbot\\services\\sessionmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}|IRCTCTatkalBot\\IRCTCTatkalBot.csproj|solutionrelative:irctctatkalbot\\services\\sessionmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}|IRCTCTatkalBot\\IRCTCTatkalBot.csproj|f:\\reverse\\irctctatkalbot\\irctctatkalbot\\services\\bookingengine.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}|IRCTCTatkalBot\\IRCTCTatkalBot.csproj|solutionrelative:irctctatkalbot\\services\\bookingengine.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}|IRCTCTatkalBot\\IRCTCTatkalBot.csproj|f:\\reverse\\irctctatkalbot\\irctctatkalbot\\app.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}|IRCTCTatkalBot\\IRCTCTatkalBot.csproj|solutionrelative:irctctatkalbot\\app.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "MainWindow.xaml.cs",
+              "DocumentMoniker": "F:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot\\MainWindow.xaml.cs",
+              "RelativeDocumentMoniker": "IRCTCTatkalBot\\MainWindow.xaml.cs",
+              "ToolTip": "F:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot\\MainWindow.xaml.cs",
+              "RelativeToolTip": "IRCTCTatkalBot\\MainWindow.xaml.cs",
+              "ViewState": "AgIAAC8AAAAAAAAAAAAowBoAAAA7AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-03T12:54:01.575Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "App.xaml.cs",
+              "DocumentMoniker": "F:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot\\App.xaml.cs",
+              "RelativeDocumentMoniker": "IRCTCTatkalBot\\App.xaml.cs",
+              "ToolTip": "F:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot\\App.xaml.cs",
+              "RelativeToolTip": "IRCTCTatkalBot\\App.xaml.cs",
+              "ViewState": "AgIAABAAAAAAAAAAAIBJwAEAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-03T12:53:52.621Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "SelectHelper.cs",
+              "DocumentMoniker": "F:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot\\Helpers\\SelectHelper.cs",
+              "RelativeDocumentMoniker": "IRCTCTatkalBot\\Helpers\\SelectHelper.cs",
+              "ToolTip": "F:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot\\Helpers\\SelectHelper.cs",
+              "RelativeToolTip": "IRCTCTatkalBot\\Helpers\\SelectHelper.cs",
+              "ViewState": "AgIAAEMAAAAAAAAAAAAcwE8AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-03T12:34:47.479Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "BookingEngine.cs",
+              "DocumentMoniker": "F:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot\\Services\\BookingEngine.cs",
+              "RelativeDocumentMoniker": "IRCTCTatkalBot\\Services\\BookingEngine.cs",
+              "ToolTip": "F:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot\\Services\\BookingEngine.cs",
+              "RelativeToolTip": "IRCTCTatkalBot\\Services\\BookingEngine.cs",
+              "ViewState": "AgIAAPYCAAAAAAAAAIBJwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-03T12:33:35.427Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "SessionManager.cs",
+              "DocumentMoniker": "F:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot\\Services\\SessionManager.cs",
+              "RelativeDocumentMoniker": "IRCTCTatkalBot\\Services\\SessionManager.cs",
+              "ToolTip": "F:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot\\Services\\SessionManager.cs",
+              "RelativeToolTip": "IRCTCTatkalBot\\Services\\SessionManager.cs",
+              "ViewState": "AgIAAK0AAAAAAAAAAEBVwAABAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-03T12:32:10.738Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "IRCTCTatkalBot.csproj",
+              "DocumentMoniker": "F:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot\\IRCTCTatkalBot.csproj",
+              "RelativeDocumentMoniker": "IRCTCTatkalBot\\IRCTCTatkalBot.csproj",
+              "ToolTip": "F:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot\\IRCTCTatkalBot.csproj",
+              "RelativeToolTip": "IRCTCTatkalBot\\IRCTCTatkalBot.csproj",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABQAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2026-05-03T12:29:11.565Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

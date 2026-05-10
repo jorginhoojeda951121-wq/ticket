@@ -1,0 +1,32 @@
+﻿using System.Windows;
+
+namespace IRCTCTatkalBot.Views
+{
+    public partial class AddAccountDialog : Window
+    {
+        public string DisplayName => DisplayNameBox.Text.Trim();
+        public string Username    => UsernameBox.Text.Trim();
+        public string Password    => PasswordBox.Password;
+        public string PhoneNumber => PhoneBox.Text.Trim();
+        public string Proxy       => ProxyBox.Text.Trim();
+
+        public AddAccountDialog()
+        {
+            InitializeComponent();
+        }
+
+        private void AddBtn_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(Username) || string.IsNullOrWhiteSpace(Password))
+            {
+                MessageBox.Show("Username and Password are required.", "Validation",
+                                MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            DialogResult = true;
+        }
+
+        private void CancelBtn_Click(object sender, RoutedEventArgs e)
+            => DialogResult = false;
+    }
+}

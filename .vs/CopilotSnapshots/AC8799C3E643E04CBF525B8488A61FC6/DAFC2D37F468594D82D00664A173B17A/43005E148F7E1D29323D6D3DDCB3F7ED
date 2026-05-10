@@ -1,0 +1,14 @@
+﻿using System.Windows;
+
+namespace IRCTCTatkalBot
+{
+    public partial class App : Application
+    {
+        protected override void OnStartup(StartupEventArgs e)
+        {
+            base.OnStartup(e);
+            // Load settings at startup
+            _ = AppSettings.Instance;
+        }
+    }
+}

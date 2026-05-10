@@ -1,0 +1,9 @@
+[22:14:58.211] [Info   ] === Application Starting ===
+[22:14:58.220] [Info   ] Loading AppSettings...
+[22:14:58.250] [Info   ] AppSettings loaded successfully
+[22:14:58.250] [Info   ] === Application Started Successfully ===
+[22:14:58.767] [Error  ] ClassCombo_SelectionChanged NullReferenceException: Object reference not set to an instance of an object.
+   at IRCTCTatkalBot.MainWindow.ClassCombo_SelectionChanged(Object sender, SelectionChangedEventArgs e) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml.cs:line 101
+[22:14:59.088] [Info   ] MainWindow: Initialized XAML
+[22:14:59.089] [Info   ] MainWindow: ViewModel created
+[22:14:59.090] [Info   ] MainWindow: DataContext set

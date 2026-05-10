@@ -1,0 +1,48 @@
+﻿using System.Windows;
+using System.Windows.Controls;
+using IRCTCTatkalBot.ViewModels;
+using IRCTCTatkalBot.Views;
+
+namespace IRCTCTatkalBot
+{
+    public partial class MainWindow : Window
+    {
+        private readonly MainViewModel _vm;
+
+        public MainWindow()
+        {
+            InitializeComponent();
+            _vm = new MainViewModel();
+            DataContext = _vm;
+        }
+
+        private async void StartScheduledBtn_Click(object sender, RoutedEventArgs e)
+            => await _vm.StartBookingAsync(immediate: false);
+
+        private async void StartNowBtn_Click(object sender, RoutedEventArgs e)
+            => await _vm.StartBookingAsync(immediate: true);
+
+        private void StopBtn_Click(object sender, RoutedEventArgs e)
+            => _vm.StopBooking();
+
+        private void AddAccountBtn_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new AddAccountDialog();
+            if (dialog.ShowDialog() == true)
+            {
+                _vm.AddAccount(
+                    dialog.DisplayName,
+                    dialog.Username,
+                    dialog.Password,
+                    dialog.PhoneNumber,
+                    dialog.Proxy);
+            }
+        }
+
+        private void ClassCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ClassCombo.SelectedItem is ComboBoxItem item)
+                _vm.TrainClass = item.Content.ToString()!;
+        }
+    }
+}

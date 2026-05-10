@@ -1,0 +1,845 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using OpenQA.Selenium;
+using OpenQA.Selenium.Support.UI;
+using IRCTCTatkalBot.Helpers;
+using IRCTCTatkalBot.Models;
+
+namespace IRCTCTatkalBot.Services
+{
+    /// <summary>
+    /// Core automation engine.
+    /// Executes the full booking flow for one account/config pair:
+    ///   Login → Search → Select Train → Fill Passengers → Payment.
+    /// When <paramref name="skipInitialLogin"/> is true, login is omitted (scheduled mode after pre-login).
+    /// </summary>
+    public class BookingEngine
+    {
+        private readonly SessionManager _session;
+        private readonly BookingConfig _config;
+        private readonly BookingResult _result;
+        private IWebDriver Driver => _session.Driver;
+        private WebDriverWait Wait => new(Driver, TimeSpan.FromSeconds(20));
+        private bool _loginSucceededOnce;
+
+        public event Action<BookingResult>? OnStatusChanged;
+
+        public BookingEngine(SessionManager session, BookingConfig config)
+        {
+            _session = session;
+            _config = config;
+            _result = new BookingResult { AccountId = _config.AccountId };
+        }
+
+        // ── Entry Point ───────────────────────────────────────────────
+
+        public async Task<BookingResult> RunAsync(CancellationToken ct = default, bool skipInitialLogin = false)
+        {
+            var phase = Stopwatch.StartNew();
+            try
+            {
+                // Step 1 – Login (skipped when scheduler already authenticated this session)
+                // Also skip on retries once we have a confirmed logged-in session for this engine instance.
+                if (skipInitialLogin || (_loginSucceededOnce && _session.IsLoggedIn()))
+                {
+                    Logger.Info("BookingEngine: Login skipped — using session from Tatkal pre-login phase.");
+                    _result.LoginPhaseSeconds = 0;
+                }
+                else
+                {
+                    UpdateStatus(BookingStatus.LoggingIn);
+                    phase.Restart();
+                    bool loggedIn = await _session.LoginAsync(ct);
+                    _result.LoginPhaseSeconds = phase.Elapsed.TotalSeconds;
+                    if (!loggedIn) return Fail("Login failed");
+                    _loginSucceededOnce = true;
+                }
+
+                // Step 2 – Search
+                UpdateStatus(BookingStatus.Searching);
+                phase.Restart();
+                bool searched = await SearchTrainAsync(ct);
+                _result.SearchPhaseSeconds = phase.Elapsed.TotalSeconds;
+                if (!searched) return Fail(_result.ErrorMessage ?? "Train search failed");
+
+                // Step 3 – Select Train & Class
+                UpdateStatus(BookingStatus.SelectingTrain);
+                phase.Restart();
+                bool selected = await SelectTrainAndClassAsync(ct);
+                _result.SelectTrainPhaseSeconds = phase.Elapsed.TotalSeconds;
+                if (!selected) return Fail(_result.ErrorMessage ?? "Could not select train/class");
+
+                // Step 4 – Fill Passengers
+                UpdateStatus(BookingStatus.FillingPassengers);
+                phase.Restart();
+                bool filled = await FillPassengersAsync(ct);
+                _result.FillPassengersPhaseSeconds = phase.Elapsed.TotalSeconds;
+                if (!filled) return Fail("Failed to fill passenger details");
+
+                // Step 5 – Payment
+                UpdateStatus(BookingStatus.ProcessingPayment);
+                phase.Restart();
+                bool paid = await ProceedToPaymentAsync(ct);
+                _result.PaymentPhaseSeconds = phase.Elapsed.TotalSeconds;
+                if (!paid) return Fail("Payment step failed");
+
+                // Done
+                _result.Status = BookingStatus.Completed;
+                _result.CompletedAt = DateTime.Now;
+                Logger.Info($"BookingEngine: ✓ Booking completed in {_result.ElapsedSeconds:F1}s | {_result.PhaseTimingSummary}");
+            }
+            catch (OperationCanceledException)
+            {
+                _result.Status = BookingStatus.Cancelled;
+                _result.ErrorMessage = "Cancelled by user.";
+                Logger.Warning("BookingEngine: Booking cancelled.");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "BookingEngine.RunAsync");
+                _result.ScreenshotPath = _session.TakeScreenshot("error");
+                return Fail($"Unexpected error: {ex.Message}");
+            }
+            finally
+            {
+                OnStatusChanged?.Invoke(_result);
+            }
+
+            return _result;
+        }
+
+        // ── Step 2: Search ────────────────────────────────────────────
+
+        private async Task<bool> SearchTrainAsync(CancellationToken ct)
+        {
+            Logger.Info($"BookingEngine: Searching {_config.FromStation} → {_config.ToStation}");
+
+            try
+            {
+                // After login, IRCTC may redirect to a dashboard variant.
+                // Always go back to train-search so the From/To/Date inputs exist reliably.
+                Driver.Navigate().GoToUrl("https://www.irctc.co.in/nget/train-search");
+                await Task.Delay(800, ct);
+
+                // Fill "From" station
+                IWebElement fromInput;
+                try
+                {
+                    fromInput = WaitForFirstVisible(TimeSpan.FromSeconds(35),
+                        By.CssSelector("input[placeholder*='From']"),
+                        By.CssSelector("input[aria-label*='From']"),
+                        By.CssSelector("input[formcontrolname*='from' i]"),
+                        By.CssSelector("input[id*='origin' i], input[name*='origin' i]"),
+                        By.XPath("//input[contains(translate(@placeholder,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'from')]"),
+                        By.XPath("//input[contains(translate(@aria-label,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'from')]")
+                    );
+                }
+                catch (WebDriverTimeoutException)
+                {
+                    _session.TakeScreenshot("search_from_input_timeout");
+                    _result.ErrorMessage = $"Search failed: Could not find 'From' station input field. URL: {SafeGetUrl()}";
+                    Logger.Error("BookingEngine.SearchTrainAsync: From input field not found within 35 seconds.");
+                    return false;
+                }
+
+                fromInput.Clear();
+                fromInput.SendKeys(_config.FromStation);
+                await Task.Delay(800, ct);
+                // Select first autocomplete suggestion
+                ClickFirstAutocompleteSuggestion(ct);
+
+                // Fill "To" station
+                var toInput = WaitForFirstVisible(TimeSpan.FromSeconds(20),
+                    By.CssSelector("input[placeholder*='To']"),
+                    By.CssSelector("input[aria-label*='To']"),
+                    By.CssSelector("input[formcontrolname*='to' i]"),
+                    By.CssSelector("input[id*='destination' i], input[name*='destination' i]"),
+                    By.XPath("//input[contains(translate(@placeholder,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'to')]"),
+                    By.XPath("//input[contains(translate(@aria-label,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'to')]")
+                );
+                toInput.Clear();
+                toInput.SendKeys(_config.ToStation);
+                await Task.Delay(800, ct);
+                ClickFirstAutocompleteSuggestion(ct);
+
+                // Set Journey Date
+                var dateInput = WaitForFirstVisible(TimeSpan.FromSeconds(20),
+                    By.CssSelector("p-calendar input"),
+                    By.CssSelector("input[placeholder*='DD/MM/YYYY'], input[placeholder*='dd/mm/yyyy']"),
+                    By.CssSelector("input[aria-label*='Date'], input[aria-label*='Journey']"),
+                    By.CssSelector("input[formcontrolname*='journey' i], input[formcontrolname*='date' i]"),
+                    By.XPath("//input[contains(translate(@placeholder,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'dd') and contains(translate(@placeholder,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'yy')]")
+                );
+                dateInput.Clear();
+                dateInput.SendKeys(_config.JourneyDate.ToString("dd/MM/yyyy"));
+                await Task.Delay(300, ct);
+                // Close calendar picker
+                dateInput.SendKeys(Keys.Escape);
+
+                // Set Quota to TATKAL
+                try
+                {
+                    var quotaSelect = WaitForFirstVisible(TimeSpan.FromSeconds(10),
+                        By.CssSelector("select[aria-label='Quota']"),
+                        By.CssSelector("select[formcontrolname*='quota' i]"),
+                        By.XPath("//select[contains(translate(@aria-label,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'quota')]")
+                    );
+                    var quotaDropdown = new SelectHelper(quotaSelect);
+                    quotaDropdown.SelectByText(_config.Quota);
+                }
+                catch
+                {
+                    // Some IRCTC variants default quota; don't fail search solely on this.
+                    Logger.Warning("BookingEngine: Quota selector not found; continuing with default quota.");
+                }
+
+                // Click Search button
+                var searchBtn = WaitForFirstVisible(TimeSpan.FromSeconds(20),
+                    By.CssSelector("button.search_btn, button[class*='train_Search']"),
+                    By.XPath("//button[contains(translate(normalize-space(.),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'search')]")
+                );
+                _session.SafeClick(searchBtn);
+
+                await Task.Delay(2000, ct);
+                Logger.Info("BookingEngine: Search submitted successfully.");
+                return true;
+            }
+            catch (WebDriverTimeoutException wdEx)
+            {
+                Logger.Error(wdEx, "BookingEngine.SearchTrainAsync - Timeout");
+                _session.TakeScreenshot("search_timeout");
+                _result.ErrorMessage =
+                    $"Search timeout: {wdEx.Message}. URL: {SafeGetUrl()}, Title: {SafeGetTitle()}";
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "BookingEngine.SearchTrainAsync");
+                _session.TakeScreenshot("search_error");
+                _result.ErrorMessage =
+                    "Train search failed: " + DriverDiagnostics.FormatShort(ex) +
+                    $" | url={SafeGetUrl()} title={SafeGetTitle()}";
+                return false;
+            }
+        }
+
+        private string SafeGetUrl()
+        {
+            try { return Driver.Url ?? ""; } catch { return ""; }
+        }
+
+        private string SafeGetTitle()
+        {
+            try { return Driver.Title ?? ""; } catch { return ""; }
+        }
+
+        private IWebElement WaitForFirstVisible(TimeSpan timeout, params By[] locators)
+        {
+            var wait = new WebDriverWait(Driver, timeout);
+            return wait.Until(d =>
+            {
+                foreach (var by in locators)
+                {
+                    try
+                    {
+                        foreach (var el in d.FindElements(by))
+                        {
+                            try
+                            {
+                                if (el.Displayed && el.Enabled) return el;
+                            }
+                            catch { /* stale */ }
+                        }
+                    }
+                    catch { /* ignore */ }
+                }
+                return null;
+            }) ?? throw new WebDriverTimeoutException("Could not locate a visible input on train-search.");
+        }
+
+        private void ClickFirstAutocompleteSuggestion(CancellationToken ct)
+        {
+            // IRCTC has changed autocomplete markup multiple times; try common patterns.
+            var wait = new WebDriverWait(Driver, TimeSpan.FromSeconds(20));
+            var el = wait.Until(d =>
+            {
+                foreach (var by in new[]
+                         {
+                             By.CssSelector(".ui-autocomplete-list-item"),
+                             By.CssSelector(".ui-autocomplete-items li"),
+                             By.CssSelector("li.ui-autocomplete-list-item"),
+                             By.CssSelector("ul[role='listbox'] li"),
+                             By.XPath("//li[@role='option']")
+                         })
+                {
+                    try
+                    {
+                        foreach (var item in d.FindElements(by))
+                        {
+                            try
+                            {
+                                if (item.Displayed) return item;
+                            }
+                            catch { /* stale */ }
+                        }
+                    }
+                    catch { /* ignore */ }
+                }
+                return null;
+            });
+
+            if (el != null)
+            {
+                _session.SafeClick(el);
+                try { Task.Delay(250, ct).Wait(ct); } catch { /* ignore */ }
+            }
+        }
+
+        // ── Step 3: Select Train ──────────────────────────────────────
+
+        private async Task<bool> SelectTrainAndClassAsync(CancellationToken ct)
+        {
+            Logger.Info($"BookingEngine: Looking for train {_config.TrainNumber} class {_config.TrainClass}");
+
+            try
+            {
+                // IRCTC changes train results DOM often. Use multiple selectors and click within the same train card.
+                var cards = WaitUntilAnyElements(TimeSpan.FromSeconds(45),
+                    By.CssSelector(".train-info-block"),
+                    By.CssSelector(".trainList, .train-list, .trainlist"),
+                    By.CssSelector("app-train-avl-enq"),
+                    By.CssSelector("[class*='train'][class*='list'], [class*='trainList'], [class*='train-list']")
+                );
+
+                IWebElement? card = PickTrainCard(cards, _config.TrainNumber);
+                if (card == null)
+                {
+                    Logger.Error("BookingEngine: No trains found in results (unrecognized DOM).");
+                    _session.TakeScreenshot("no_trains");
+                    _result.ErrorMessage = "Could not select train/class: No trains found in results.";
+                    return false;
+                }
+
+                // Find class element by visible text within the card (3A/SL/2A/etc.)
+                string cls = (_config.TrainClass ?? "").Trim();
+                if (cls.Length == 0) cls = "SL";
+                var classEl = FindFirstClickableIn(card,
+                    By.XPath($".//*[self::button or self::a or self::div or self::span][contains(translate(normalize-space(.),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'), '{cls.ToLowerInvariant()}')]"),
+                    By.CssSelector(".pre-avl, .available-status, [class*='AVAIL'], [class*='available']")
+                );
+
+                if (classEl == null)
+                {
+                    Logger.Error($"BookingEngine: Class '{cls}' not found/clickable in train card.");
+                    _session.TakeScreenshot("no_class");
+                    _result.ErrorMessage = $"Could not select train/class: Class '{cls}' not found/clickable.";
+                    return false;
+                }
+
+                _session.SafeClick(classEl);
+                await Task.Delay(900, ct);
+
+                // Prefer Book Now inside the same train card; fallback globally if needed.
+                var bookNowBtn =
+                    FindFirstClickableIn(card,
+                        By.XPath(".//button[contains(translate(normalize-space(.),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'book')]"),
+                        By.CssSelector("button.trainBook, button[class*='btnDefault'], button[class*='btn-primary']"))
+                    ?? FindFirstClickableGlobal(
+                        By.XPath("//button[contains(translate(normalize-space(.),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'book')]"),
+                        By.CssSelector("button.trainBook, button[class*='btnDefault'], button[class*='btn-primary']"));
+
+                if (bookNowBtn == null)
+                    throw new WebDriverTimeoutException("Book Now button not found/clickable after selecting class.");
+
+                _session.SafeClick(bookNowBtn);
+
+                // Confirm navigation to passenger/review page
+                var confirm = new WebDriverWait(Driver, TimeSpan.FromSeconds(25));
+                confirm.Until(d =>
+                    d.FindElements(By.CssSelector("app-passenger, .passenger-entry, app-review-journey")).Count > 0
+                    || (d.Url ?? "").Contains("passenger", StringComparison.OrdinalIgnoreCase)
+                    || (d.Url ?? "").Contains("review", StringComparison.OrdinalIgnoreCase));
+
+                Logger.Info("BookingEngine: Train and class selected.");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "BookingEngine.SelectTrainAndClassAsync");
+                _session.TakeScreenshot("select_error");
+                _result.ErrorMessage =
+                    "Could not select train/class: " + DriverDiagnostics.FormatShort(ex) +
+                    $" | url={SafeGetUrl()} title={SafeGetTitle()}";
+                return false;
+            }
+        }
+
+        private IReadOnlyCollection<IWebElement> WaitUntilAnyElements(TimeSpan timeout, params By[] locators)
+        {
+            var wait = new WebDriverWait(Driver, timeout);
+            var els = wait.Until(d =>
+            {
+                foreach (var by in locators)
+                {
+                    try
+                    {
+                        var els = d.FindElements(by);
+                        if (els.Count > 0) return els;
+                    }
+                    catch { /* ignore */ }
+                }
+                return null;
+            });
+
+            if (els == null) return Array.Empty<IWebElement>();
+            return els;
+        }
+
+        private static IWebElement? PickTrainCard(IReadOnlyCollection<IWebElement> cards, string trainNumber)
+        {
+            if (!string.IsNullOrWhiteSpace(trainNumber))
+            {
+                foreach (var c in cards)
+                {
+                    try
+                    {
+                        var t = (c.Text ?? "").Trim();
+                        if (t.Contains(trainNumber, StringComparison.OrdinalIgnoreCase))
+                            return c;
+                    }
+                    catch { /* ignore */ }
+                }
+            }
+
+            foreach (var c in cards)
+            {
+                try { if (c.Displayed) return c; } catch { /* ignore */ }
+            }
+
+            return cards.FirstOrDefault();
+        }
+
+        private static IWebElement? FindFirstClickableIn(IWebElement root, params By[] locators)
+        {
+            foreach (var by in locators)
+            {
+                try
+                {
+                    foreach (var el in root.FindElements(by))
+                    {
+                        try
+                        {
+                            if (el.Displayed && el.Enabled) return el;
+                        }
+                        catch { /* stale */ }
+                    }
+                }
+                catch { /* ignore */ }
+            }
+            return null;
+        }
+
+        private IWebElement? FindFirstClickableGlobal(params By[] locators)
+        {
+            foreach (var by in locators)
+            {
+                try
+                {
+                    foreach (var el in Driver.FindElements(by))
+                    {
+                        try
+                        {
+                            if (el.Displayed && el.Enabled) return el;
+                        }
+                        catch { /* stale */ }
+                    }
+                }
+                catch { /* ignore */ }
+            }
+            return null;
+        }
+
+        // ── Step 4: Fill Passengers ───────────────────────────────────
+
+        private async Task<bool> FillPassengersAsync(CancellationToken ct)
+        {
+            Logger.Info($"BookingEngine: Filling {_config.Passengers.Count} passenger(s)...");
+
+            try
+            {
+                // Wait for passenger form
+                Wait.Until(d => d.FindElement(
+                    By.CssSelector("app-passenger, .passenger-entry")));
+
+                for (int i = 0; i < _config.Passengers.Count; i++)
+                {
+                    var p = _config.Passengers[i];
+                    string rowSelector = $".passenger-entry:nth-child({i + 1})";
+
+                    // Name
+                    var nameField = Driver.FindElement(
+                        By.CssSelector($"{rowSelector} input[placeholder*='Name'], " +
+                                       $"input[formcontrolname='passengerName']:nth-of-type({i + 1})"));
+                    nameField.Clear();
+                    nameField.SendKeys(p.Name);
+
+                    // Age
+                    var ageField = Driver.FindElement(
+                        By.CssSelector($"{rowSelector} input[placeholder*='Age'], " +
+                                       $"input[formcontrolname='passengerAge']:nth-of-type({i + 1})"));
+                    ageField.Clear();
+                    ageField.SendKeys(p.Age.ToString());
+
+                    // Gender
+                    var genderSelect = Driver.FindElement(
+                        By.CssSelector($"{rowSelector} select[formcontrolname='passengerGender'], " +
+                                       $"select[aria-label='Gender']:nth-of-type({i + 1})"));
+                    var genderDropdown = new SelectHelper(genderSelect);
+                    genderDropdown.SelectByValue(p.Gender);
+
+                    // Berth preference
+                    if (!string.IsNullOrEmpty(p.BerthPreference) && p.BerthPreference != "NO")
+                    {
+                        try
+                        {
+                            var berthSelect = Driver.FindElement(
+                                By.CssSelector($"{rowSelector} select[formcontrolname='berthChoice']"));
+                            var berthDropdown = new SelectHelper(berthSelect);
+                            berthDropdown.SelectByText(p.BerthPreference);
+                        }
+                        catch { /* berth preference may not always be available */ }
+                    }
+
+                    Logger.Debug($"BookingEngine: Passenger {i + 1} ({p.Name}) filled.");
+                    await Task.Delay(200, ct);
+                }
+
+                // Handle "Add Insurance" popup if it appears — click "No"
+                await Task.Delay(500, ct);
+                try
+                {
+                    var noInsuranceBtn = Driver.FindElement(
+                        By.CssSelector("button[class*='InsuranceNo'], button[id*='noInsurance']"));
+                    noInsuranceBtn.Click();
+                    Logger.Debug("BookingEngine: Dismissed insurance popup.");
+                }
+                catch { }
+
+                // Click "Continue" / "Review Journey" button
+                var continueBtn = Wait.Until(d =>
+                    d.FindElement(By.CssSelector(
+                        "button[class*='btnDefault'][type='submit'], " +
+                        "button.train_Search")));
+                _session.SafeClick(continueBtn);
+
+                await Task.Delay(2000, ct);
+                Logger.Info("BookingEngine: Passenger details submitted.");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "BookingEngine.FillPassengersAsync");
+                _session.TakeScreenshot("passenger_error");
+                return false;
+            }
+        }
+
+        // ── Step 5: Payment ───────────────────────────────────────────
+
+        private async Task<bool> ProceedToPaymentAsync(CancellationToken ct)
+        {
+            Logger.Info("BookingEngine: Proceeding to payment...");
+
+            try
+            {
+                // Solve captcha on review page if present
+                await Task.Delay(1500, ct);
+                try
+                {
+                    var captchaImg = Driver.FindElement(By.CssSelector("app-captcha img"));
+                    if (captchaImg.Displayed)
+                    {
+                        var captchaInput = Driver.FindElement(
+                            By.CssSelector("input[formcontrolname='captcha']"));
+
+                        string? answer;
+                        if (_session.CaptchaSolver is ManualCaptchaSolver)
+                        {
+                            Logger.Info("BookingEngine: Manual captcha — enter the code in the review page, then automation continues.");
+                            answer = await ManualCaptchaSolver.WaitForUserEntryAsync(captchaInput, ct);
+                            _result.LastCaptchaSolveSeconds = null;
+                        }
+                        else
+                        {
+                            string src = captchaImg.GetAttribute("src") ?? "";
+                            string base64 = src.StartsWith("data:")
+                                ? src.Substring(src.IndexOf(',') + 1)
+                                : Convert.ToBase64String(
+                                    await new System.Net.Http.HttpClient()
+                                        .GetByteArrayAsync(src, ct));
+
+                            var swCap = Stopwatch.StartNew();
+                            answer = await _session.CaptchaSolver.SolveImageCaptchaAsync(base64, ct);
+                            _result.LastCaptchaSolveSeconds = swCap.Elapsed.TotalSeconds;
+                        }
+
+                        if (!string.IsNullOrEmpty(answer) && _session.CaptchaSolver is not ManualCaptchaSolver)
+                        {
+                            captchaInput.Clear();
+                            captchaInput.SendKeys(answer);
+                        }
+                    }
+                }
+                catch { /* no captcha on this page, skip */ }
+
+                // Click "Proceed to Payment"
+                var payBtn = Wait.Until(d =>
+                    d.FindElement(By.CssSelector(
+                        "button[class*='btnDefault'][aria-label*='Pay'], " +
+                        "button[class*='proceed']")));
+                _session.SafeClick(payBtn);
+
+                await Task.Delay(2000, ct);
+
+                // Select payment method
+                await SelectPaymentMethodAsync(ct);
+
+                // Wait for PNR or success confirmation
+                await Task.Delay(5000, ct);
+                string? pnr = TryExtractPnr();
+                if (!string.IsNullOrEmpty(pnr))
+                {
+                    _result.PnrNumber = pnr;
+                    Logger.Info($"BookingEngine: PNR = {pnr}");
+                }
+
+                _result.ScreenshotPath = _session.TakeScreenshot("booking_success");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "BookingEngine.ProceedToPaymentAsync");
+                _session.TakeScreenshot("payment_error");
+                return false;
+            }
+        }
+
+        private async Task SelectPaymentMethodAsync(CancellationToken ct)
+        {
+            await Task.Delay(1500, ct);
+
+            switch (_config.PaymentMethod.ToUpperInvariant())
+            {
+                case "UPI":
+                    try
+                    {
+                        var upiTab = Wait.Until(d =>
+                            d.FindElement(By.CssSelector(
+                                "[id*='UPI'], [aria-label*='UPI'], label[for*='upi']")));
+                        _session.SafeClick(upiTab);
+                        await Task.Delay(800, ct);
+
+                        var upiInput = Driver.FindElement(
+                            By.CssSelector("input[placeholder*='UPI'], input[id*='upiId']"));
+
+                        if (!string.IsNullOrWhiteSpace(_config.UpiId))
+                        {
+                            upiInput.Clear();
+                            upiInput.SendKeys(_config.UpiId);
+                        }
+                        else
+                        {
+                            Logger.Info("BookingEngine: UPI ID not set in the app — type your VPA in Chrome; waiting for the field to be filled…");
+                            await WaitForManualUpiVpaAsync(upiInput, ct);
+                        }
+
+                        var payNowBtn = Driver.FindElement(
+                            By.CssSelector("button[class*='payNow'], button[aria-label*='Pay Now']"));
+                        _session.SafeClick(payNowBtn);
+                        Logger.Info("BookingEngine: UPI payment initiated.");
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error(ex, "UPI payment selection");
+                    }
+                    break;
+
+                default:
+                    Logger.Warning($"BookingEngine: Payment method '{_config.PaymentMethod}' not auto-handled. Manual action needed.");
+                    break;
+            }
+        }
+
+        private string? TryExtractPnr()
+        {
+            try
+            {
+                var pnrEl = Driver.FindElement(
+                    By.CssSelector(".pnr-no, [class*='pnrNo'], strong"));
+                string text = pnrEl.Text.Trim();
+                if (text.Length >= 10 && text.All(char.IsDigit)) return text;
+            }
+            catch { }
+            return null;
+        }
+
+        /// <summary>Waits until the UPI field looks like a filled VPA (contains @) and is briefly stable.</summary>
+        private static async Task WaitForManualUpiVpaAsync(IWebElement upiInput, CancellationToken ct,
+            TimeSpan? maxWait = null)
+        {
+            maxWait ??= TimeSpan.FromMinutes(12);
+            DateTime deadline = DateTime.UtcNow + maxWait.Value;
+            string? pending = null;
+            DateTime pendingSince = DateTime.MinValue;
+
+            while (DateTime.UtcNow < deadline && !ct.IsCancellationRequested)
+            {
+                string v;
+                try
+                {
+                    v = upiInput.GetAttribute("value")?.Trim() ?? "";
+                }
+                catch (StaleElementReferenceException)
+                {
+                    Logger.Warning("BookingEngine: UPI field went stale while waiting for manual entry.");
+                    return;
+                }
+
+                bool plausible = v.Length >= 5 && v.Contains('@', StringComparison.Ordinal);
+                if (plausible)
+                {
+                    if (v == pending)
+                    {
+                        if ((DateTime.UtcNow - pendingSince).TotalMilliseconds >= 650)
+                            return;
+                    }
+                    else
+                    {
+                        pending = v;
+                        pendingSince = DateTime.UtcNow;
+                    }
+                }
+                else
+                    pending = null;
+
+                try
+                {
+                    await Task.Delay(350, ct);
+                }
+                catch (OperationCanceledException)
+                {
+                    return;
+                }
+            }
+
+            Logger.Warning("BookingEngine: Timed out waiting for manual UPI — check the browser and Pay Now if needed.");
+        }
+
+        // ── Helpers ───────────────────────────────────────────────────
+
+        private BookingResult Fail(string reason)
+        {
+            _result.Status = BookingStatus.Failed;
+            _result.ErrorMessage = reason;
+            _result.CompletedAt = DateTime.Now;
+            Logger.Error($"BookingEngine: FAILED – {reason}");
+            OnStatusChanged?.Invoke(_result);
+            return _result;
+        }
+
+        private void UpdateStatus(BookingStatus status)
+        {
+            _result.Status = status;
+            Logger.Info($"BookingEngine: → {status}");
+            OnStatusChanged?.Invoke(_result);
+        }
+
+        // ── Helper Methods for Train Selection ─────────────────────────
+
+        private IWebElement? PickTrainCard(IReadOnlyCollection<IWebElement> cards, string? trainNumber)
+        {
+            if (cards.Count == 0) return null;
+            if (string.IsNullOrWhiteSpace(trainNumber)) return cards.FirstOrDefault();
+
+            foreach (var card in cards)
+            {
+                try
+                {
+                    string text = card.Text ?? "";
+                    if (text.Contains(trainNumber, StringComparison.OrdinalIgnoreCase))
+                        return card;
+                }
+                catch { }
+            }
+
+            return cards.FirstOrDefault();
+        }
+
+        private IWebElement? FindFirstClickableIn(IWebElement container, params By[] locators)
+        {
+            foreach (var by in locators)
+            {
+                try
+                {
+                    var els = container.FindElements(by);
+                    foreach (var el in els)
+                    {
+                        if (el.Displayed && el.Enabled)
+                            return el;
+                    }
+                }
+                catch { }
+            }
+            return null;
+        }
+
+        private IWebElement? FindFirstClickableGlobal(params By[] locators)
+        {
+            foreach (var by in locators)
+            {
+                try
+                {
+                    var els = Driver.FindElements(by);
+                    foreach (var el in els)
+                    {
+                        if (el.Displayed && el.Enabled)
+                            return el;
+                    }
+                }
+                catch { }
+            }
+            return null;
+        }
+
+        private string SafeGetUrl()
+        {
+            try { return Driver.Url ?? "unknown"; }
+            catch { return "unknown"; }
+        }
+
+        private string SafeGetTitle()
+        {
+            try { return Driver.Title ?? "unknown"; }
+            catch { return "unknown"; }
+        }
+    }
+
+    /// <summary>Helper for formatting error diagnostics</summary>
+    public static class DriverDiagnostics
+    {
+        public static string FormatShort(Exception ex)
+        {
+            if (ex is WebDriverTimeoutException)
+                return "Timeout (element not found/ready)";
+            if (ex is NoSuchElementException)
+                return "Element not found";
+            if (ex is StaleElementReferenceException)
+                return "Element became stale";
+            return ex.GetType().Name;
+        }
+    }
+}

@@ -1,0 +1,244 @@
+[02:47:28.130] [Info   ] === Application Starting ===
+[02:47:28.138] [Info   ] Loading AppSettings...
+[02:47:29.218] [Info   ] AppSettings loaded successfully
+[02:47:29.218] [Info   ] === Application Started Successfully ===
+[02:47:29.258] [Info   ] AccountManager: Loaded 1 account(s)
+[02:47:29.263] [Info   ] MainWindow: ViewModel created
+[02:47:29.449] [Info   ] MainWindow: Initialized XAML
+[02:47:29.449] [Info   ] MainWindow: DataContext set
+[02:47:46.447] [Info   ] Orchestrator: Immediate mode: Starting bookings now...
+[02:48:45.612] [Warning] ChromeDriverFactory: attempt 1/3 — Cannot start the driver service on http://localhost:54971/
+[02:48:45.612] [Warning] ChromeDriverFactory: retry 2/3 after 2000ms delay.
+[02:49:10.464] [Warning] ChromeDriverFactory: attempt 2/3 — Cannot start the driver service on http://localhost:54687/
+[02:49:10.464] [Warning] ChromeDriverFactory: retry 3/3 after 2000ms delay.
+[02:49:56.101] [Warning] ChromeDriverFactory: attempt 3/3 — Cannot start the driver service on http://localhost:61143/
+[02:49:56.110] [Error  ] SessionManager.StartDriver WebDriverException: Cannot start the driver service on http://localhost:61143/
+
+Things to try:
+• Turn ON "Show Chrome windows" (disable headless) and test again.
+• Run with one active account first.
+• Exclude this app folder, Chrome, and chromedriver (often under %USERPROFILE%\.cache\selenium) from real-time antivirus.
+• Temporarily disable VPN / corporate proxy and retry.
+• Open Logs\chromedriver_last.log for ChromeDriver details.
+
+---- chromedriver_last.log (tail) ----
+[1778100518.332][INFO]: Starting ChromeDriver 148.0.7778.97 (6b3fa66a923a9442c8ab0bc71b4b41ff24528d3b-refs/branch-heads/7778@{#1905}) on port 49826
+[1778100518.332][INFO]: Please see https://chromedriver.chromium.org/security-considerations for suggestions on keeping ChromeDriver safe.
+[1778100518.371][INFO]: ChromeDriver was started successfully on port 49826
+
+   at IRCTCTatkalBot.Services.ChromeDriverFactory.Create(ChromeOptions options) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\ChromeDriverFactory.cs:line 90
+   at IRCTCTatkalBot.Services.SessionManager.StartDriver() in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 89
+[02:49:56.111] [Error  ] Orchestrator: ChromeDriver failed for chotubhaifinance WebDriverException: Cannot start the driver service on http://localhost:61143/
+
+Things to try:
+• Turn ON "Show Chrome windows" (disable headless) and test again.
+• Run with one active account first.
+• Exclude this app folder, Chrome, and chromedriver (often under %USERPROFILE%\.cache\selenium) from real-time antivirus.
+• Temporarily disable VPN / corporate proxy and retry.
+• Open Logs\chromedriver_last.log for ChromeDriver details.
+
+---- chromedriver_last.log (tail) ----
+[1778100518.332][INFO]: Starting ChromeDriver 148.0.7778.97 (6b3fa66a923a9442c8ab0bc71b4b41ff24528d3b-refs/branch-heads/7778@{#1905}) on port 49826
+[1778100518.332][INFO]: Please see https://chromedriver.chromium.org/security-considerations for suggestions on keeping ChromeDriver safe.
+[1778100518.371][INFO]: ChromeDriver was started successfully on port 49826
+
+   at IRCTCTatkalBot.Services.ChromeDriverFactory.Create(ChromeOptions options) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\ChromeDriverFactory.cs:line 90
+   at IRCTCTatkalBot.Services.SessionManager.StartDriver() in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 89
+   at IRCTCTatkalBot.Services.BookingOrchestrator.RunImmediateAccountAsync(BookingConfig cfg, Int32 staggerIndex, CancellationToken ct) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\BookingOrchestrator.cs:line 227
+[02:49:56.111] [Info   ] SessionManager: Driver disposed
+[02:50:41.243] [Warning] ChromeDriverFactory: attempt 1/3 — Cannot start the driver service on http://localhost:51611/
+[02:50:41.244] [Warning] ChromeDriverFactory: retry 2/3 after 2000ms delay.
+[02:50:51.634] [Warning] ChromeDriverFactory: attempt 2/3 — Cannot start the driver service on http://localhost:57409/
+[02:50:51.635] [Warning] ChromeDriverFactory: retry 3/3 after 2000ms delay.
+[02:52:25.239] [Info   ] === Application Starting ===
+[02:52:25.247] [Info   ] Loading AppSettings...
+[02:52:25.315] [Info   ] AppSettings loaded successfully
+[02:52:25.315] [Info   ] === Application Started Successfully ===
+[02:52:25.361] [Info   ] AccountManager: Loaded 1 account(s)
+[02:52:25.365] [Info   ] MainWindow: ViewModel created
+[02:52:25.541] [Info   ] MainWindow: Initialized XAML
+[02:52:25.541] [Info   ] MainWindow: DataContext set
+[02:52:38.386] [Info   ] Orchestrator: Immediate mode: Starting bookings now...
+[02:52:40.569] [Info   ] SessionManager: ChromeDriver started for chotubhaifinance
+[02:52:40.570] [Info   ] Orchestrator: Attempt 1/3 for account bfaabd7e-dbf3-4901-bb33-57d6a2586360
+[02:52:40.571] [Info   ] BookingEngine: → LoggingIn
+[02:52:40.574] [Info   ] SessionManager: Logging in chotubhaifinance...
+[02:52:53.746] [Error  ] SessionManager.LoginAsync WebDriverException: invalid session id: session deleted as the browser has closed the connection
+from disconnected: unable to send message to renderer
+  (Session info: chrome=148.0.7778.96)
+   at OpenQA.Selenium.WebDriver.UnpackAndThrowOnError(Response errorResponse, String commandToExecute)
+   at OpenQA.Selenium.WebDriver.ExecuteAsync(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.Execute(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.FindElement(String mechanism, String value)
+   at OpenQA.Selenium.By.<.ctor>b__11_0(ISearchContext context)
+   at OpenQA.Selenium.By.FindElement(ISearchContext context)
+   at OpenQA.Selenium.WebDriver.FindElement(By by)
+   at IRCTCTatkalBot.Services.SessionManager.<>c.<LoginAsync>b__11_0(IWebDriver d) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 125
+   at OpenQA.Selenium.Support.UI.DefaultWait`1.Until[TResult](Func`2 condition, CancellationToken token)
+   at OpenQA.Selenium.Support.UI.DefaultWait`1.Until[TResult](Func`2 condition)
+   at IRCTCTatkalBot.Services.SessionManager.LoginAsync(CancellationToken ct) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 124
+[02:52:53.749] [Error  ] SessionManager.TakeScreenshot WebDriverException: invalid session id
+   at OpenQA.Selenium.WebDriver.UnpackAndThrowOnError(Response errorResponse, String commandToExecute)
+   at OpenQA.Selenium.WebDriver.ExecuteAsync(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.Execute(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.GetScreenshot()
+   at IRCTCTatkalBot.Services.SessionManager.TakeScreenshot(String label) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 231
+[02:52:53.750] [Error  ] BookingEngine: FAILED – Login failed
+[02:52:53.750] [Warning] Orchestrator: Retrying in 500ms...
+[02:52:54.255] [Info   ] Orchestrator: Attempt 2/3 for account bfaabd7e-dbf3-4901-bb33-57d6a2586360
+[02:52:54.255] [Info   ] BookingEngine: → LoggingIn
+[02:52:54.255] [Info   ] SessionManager: Logging in chotubhaifinance...
+[02:52:54.257] [Error  ] SessionManager.LoginAsync WebDriverException: invalid session id
+   at OpenQA.Selenium.WebDriver.UnpackAndThrowOnError(Response errorResponse, String commandToExecute)
+   at OpenQA.Selenium.WebDriver.ExecuteAsync(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.Navigator.GoToUrlAsync(String url)
+   at OpenQA.Selenium.Navigator.<>c__DisplayClass6_0.<<GoToUrl>b__0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at OpenQA.Selenium.Navigator.GoToUrl(String url)
+   at IRCTCTatkalBot.Services.SessionManager.LoginAsync(CancellationToken ct) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 119
+[02:52:54.258] [Error  ] SessionManager.TakeScreenshot WebDriverException: invalid session id
+   at OpenQA.Selenium.WebDriver.UnpackAndThrowOnError(Response errorResponse, String commandToExecute)
+   at OpenQA.Selenium.WebDriver.ExecuteAsync(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.Execute(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.GetScreenshot()
+   at IRCTCTatkalBot.Services.SessionManager.TakeScreenshot(String label) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 231
+[02:52:54.258] [Error  ] BookingEngine: FAILED – Login failed
+[02:52:54.258] [Warning] Orchestrator: Retrying in 500ms...
+[02:52:54.766] [Info   ] Orchestrator: Attempt 3/3 for account bfaabd7e-dbf3-4901-bb33-57d6a2586360
+[02:52:54.766] [Info   ] BookingEngine: → LoggingIn
+[02:52:54.766] [Info   ] SessionManager: Logging in chotubhaifinance...
+[02:52:54.768] [Error  ] SessionManager.LoginAsync WebDriverException: invalid session id
+   at OpenQA.Selenium.WebDriver.UnpackAndThrowOnError(Response errorResponse, String commandToExecute)
+   at OpenQA.Selenium.WebDriver.ExecuteAsync(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.Navigator.GoToUrlAsync(String url)
+   at OpenQA.Selenium.Navigator.<>c__DisplayClass6_0.<<GoToUrl>b__0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at OpenQA.Selenium.Navigator.GoToUrl(String url)
+   at IRCTCTatkalBot.Services.SessionManager.LoginAsync(CancellationToken ct) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 119
+[02:52:54.770] [Error  ] SessionManager.TakeScreenshot WebDriverException: invalid session id
+   at OpenQA.Selenium.WebDriver.UnpackAndThrowOnError(Response errorResponse, String commandToExecute)
+   at OpenQA.Selenium.WebDriver.ExecuteAsync(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.Execute(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.GetScreenshot()
+   at IRCTCTatkalBot.Services.SessionManager.TakeScreenshot(String label) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 231
+[02:52:54.770] [Error  ] BookingEngine: FAILED – Login failed
+[02:52:54.993] [Info   ] SessionManager: Driver disposed
+[06:15:56.519] [Info   ] Orchestrator: Immediate mode: Starting bookings now...
+[06:16:32.334] [Info   ] SessionManager: ChromeDriver started for chotubhaifinance
+[06:16:32.334] [Info   ] Orchestrator: Attempt 1/3 for account bfaabd7e-dbf3-4901-bb33-57d6a2586360
+[06:16:32.334] [Info   ] BookingEngine: → LoggingIn
+[06:16:32.334] [Info   ] SessionManager: Logging in chotubhaifinance...
+[06:16:38.676] [Error  ] SessionManager.LoginAsync WebDriverException: invalid session id: session deleted as the browser has closed the connection
+from disconnected: unable to send message to renderer
+  (Session info: chrome=148.0.7778.96)
+   at OpenQA.Selenium.WebDriver.UnpackAndThrowOnError(Response errorResponse, String commandToExecute)
+   at OpenQA.Selenium.WebDriver.ExecuteAsync(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.Execute(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.FindElement(String mechanism, String value)
+   at OpenQA.Selenium.By.<.ctor>b__11_0(ISearchContext context)
+   at OpenQA.Selenium.By.FindElement(ISearchContext context)
+   at OpenQA.Selenium.WebDriver.FindElement(By by)
+   at IRCTCTatkalBot.Services.SessionManager.<>c.<LoginAsync>b__11_0(IWebDriver d) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 125
+   at OpenQA.Selenium.Support.UI.DefaultWait`1.Until[TResult](Func`2 condition, CancellationToken token)
+   at OpenQA.Selenium.Support.UI.DefaultWait`1.Until[TResult](Func`2 condition)
+   at IRCTCTatkalBot.Services.SessionManager.LoginAsync(CancellationToken ct) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 124
+[06:16:38.746] [Error  ] SessionManager.TakeScreenshot WebDriverException: invalid session id
+   at OpenQA.Selenium.WebDriver.UnpackAndThrowOnError(Response errorResponse, String commandToExecute)
+   at OpenQA.Selenium.WebDriver.ExecuteAsync(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.Execute(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.GetScreenshot()
+   at IRCTCTatkalBot.Services.SessionManager.TakeScreenshot(String label) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 231
+[06:16:38.747] [Error  ] BookingEngine: FAILED – Login failed
+[06:16:38.748] [Warning] Orchestrator: Retrying in 500ms...
+[06:16:39.258] [Info   ] Orchestrator: Attempt 2/3 for account bfaabd7e-dbf3-4901-bb33-57d6a2586360
+[06:16:39.258] [Info   ] BookingEngine: → LoggingIn
+[06:16:39.258] [Info   ] SessionManager: Logging in chotubhaifinance...
+[06:16:39.260] [Error  ] SessionManager.LoginAsync WebDriverException: invalid session id
+   at OpenQA.Selenium.WebDriver.UnpackAndThrowOnError(Response errorResponse, String commandToExecute)
+   at OpenQA.Selenium.WebDriver.ExecuteAsync(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.Navigator.GoToUrlAsync(String url)
+   at OpenQA.Selenium.Navigator.<>c__DisplayClass6_0.<<GoToUrl>b__0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at OpenQA.Selenium.Navigator.GoToUrl(String url)
+   at IRCTCTatkalBot.Services.SessionManager.LoginAsync(CancellationToken ct) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 119
+[06:16:39.262] [Error  ] SessionManager.TakeScreenshot WebDriverException: invalid session id
+   at OpenQA.Selenium.WebDriver.UnpackAndThrowOnError(Response errorResponse, String commandToExecute)
+   at OpenQA.Selenium.WebDriver.ExecuteAsync(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.Execute(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.GetScreenshot()
+   at IRCTCTatkalBot.Services.SessionManager.TakeScreenshot(String label) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 231
+[06:16:39.262] [Error  ] BookingEngine: FAILED – Login failed
+[06:16:39.262] [Warning] Orchestrator: Retrying in 500ms...
+[06:16:39.762] [Info   ] Orchestrator: Attempt 3/3 for account bfaabd7e-dbf3-4901-bb33-57d6a2586360
+[06:16:39.762] [Info   ] BookingEngine: → LoggingIn
+[06:16:39.762] [Info   ] SessionManager: Logging in chotubhaifinance...
+[06:16:39.763] [Error  ] SessionManager.LoginAsync WebDriverException: invalid session id
+   at OpenQA.Selenium.WebDriver.UnpackAndThrowOnError(Response errorResponse, String commandToExecute)
+   at OpenQA.Selenium.WebDriver.ExecuteAsync(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.Navigator.GoToUrlAsync(String url)
+   at OpenQA.Selenium.Navigator.<>c__DisplayClass6_0.<<GoToUrl>b__0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at OpenQA.Selenium.Navigator.GoToUrl(String url)
+   at IRCTCTatkalBot.Services.SessionManager.LoginAsync(CancellationToken ct) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 119
+[06:16:39.764] [Error  ] SessionManager.TakeScreenshot WebDriverException: invalid session id
+   at OpenQA.Selenium.WebDriver.UnpackAndThrowOnError(Response errorResponse, String commandToExecute)
+   at OpenQA.Selenium.WebDriver.ExecuteAsync(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.Execute(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.GetScreenshot()
+   at IRCTCTatkalBot.Services.SessionManager.TakeScreenshot(String label) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 231
+[06:16:39.764] [Error  ] BookingEngine: FAILED – Login failed
+[06:16:39.997] [Info   ] SessionManager: Driver disposed
+[11:47:01.756] [Info   ] === Application Starting ===
+[11:47:01.764] [Info   ] Loading AppSettings...
+[11:47:01.834] [Info   ] AppSettings loaded successfully
+[11:47:01.834] [Info   ] === Application Started Successfully ===
+[11:47:01.873] [Info   ] AccountManager: Loaded 1 account(s)
+[11:47:01.877] [Info   ] MainWindow: ViewModel created
+[11:47:02.038] [Info   ] MainWindow: Initialized XAML
+[11:47:02.038] [Info   ] MainWindow: DataContext set
+[11:47:05.093] [Info   ] Orchestrator: Immediate mode: Starting bookings now...
+[11:47:10.630] [Info   ] SessionManager: ChromeDriver started for chotubhaifinance
+[11:47:10.631] [Info   ] Orchestrator: Attempt 1/3 for account bfaabd7e-dbf3-4901-bb33-57d6a2586360
+[11:47:10.633] [Info   ] BookingEngine: → LoggingIn
+[11:47:10.649] [Info   ] SessionManager: Logging in chotubhaifinance...
+[11:47:19.006] [Error  ] SessionManager.LoginAsync WebDriverException: An unknown exception was encountered sending an HTTP request to the remote WebDriver server for URL http://localhost:51329/session/6fbf498362cf78873e8cb820f204dee5/elements. The exception message was: No connection could be made because the target machine actively refused it. (localhost:51329)
+   at OpenQA.Selenium.Remote.HttpCommandExecutor.ExecuteAsync(Command commandToExecute)
+   at OpenQA.Selenium.Remote.DriverServiceCommandExecutor.ExecuteAsync(Command commandToExecute)
+   at OpenQA.Selenium.WebDriver.ExecuteAsync(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.Execute(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.FindElements(String mechanism, String value)
+   at OpenQA.Selenium.By.<.ctor>b__11_1(ISearchContext context)
+   at OpenQA.Selenium.By.FindElements(ISearchContext context)
+   at OpenQA.Selenium.WebDriver.FindElements(By by)
+   at IRCTCTatkalBot.Services.SessionManager.IsUserIdFieldVisible(IWebDriver driver) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 280
+   at IRCTCTatkalBot.Services.SessionManager.LoginAsync(CancellationToken ct) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 131
+[11:47:21.054] [Error  ] SessionManager.TakeScreenshot WebDriverException: An unknown exception was encountered sending an HTTP request to the remote WebDriver server for URL http://localhost:51329/session/6fbf498362cf78873e8cb820f204dee5/screenshot. The exception message was: No connection could be made because the target machine actively refused it. (localhost:51329)
+   at OpenQA.Selenium.Remote.HttpCommandExecutor.ExecuteAsync(Command commandToExecute)
+   at OpenQA.Selenium.Remote.DriverServiceCommandExecutor.ExecuteAsync(Command commandToExecute)
+   at OpenQA.Selenium.WebDriver.ExecuteAsync(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.Execute(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.GetScreenshot()
+   at IRCTCTatkalBot.Services.SessionManager.TakeScreenshot(String label) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 480
+[11:47:21.054] [Error  ] BookingEngine: FAILED – Login failed
+[11:47:21.055] [Warning] Orchestrator: Retrying in 500ms...
+[11:47:21.568] [Info   ] Orchestrator: Attempt 2/3 for account bfaabd7e-dbf3-4901-bb33-57d6a2586360
+[11:47:21.569] [Info   ] BookingEngine: → LoggingIn
+[11:47:21.569] [Info   ] SessionManager: Logging in chotubhaifinance...
+[11:47:23.603] [Error  ] SessionManager.LoginAsync WebDriverException: An unknown exception was encountered sending an HTTP request to the remote WebDriver server for URL http://localhost:51329/session/6fbf498362cf78873e8cb820f204dee5/url. The exception message was: No connection could be made because the target machine actively refused it. (localhost:51329)
+   at OpenQA.Selenium.Remote.HttpCommandExecutor.ExecuteAsync(Command commandToExecute)
+   at OpenQA.Selenium.Remote.DriverServiceCommandExecutor.ExecuteAsync(Command commandToExecute)
+   at OpenQA.Selenium.WebDriver.ExecuteAsync(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.Navigator.GoToUrlAsync(String url)
+   at OpenQA.Selenium.Navigator.<>c__DisplayClass6_0.<<GoToUrl>b__0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at OpenQA.Selenium.Navigator.GoToUrl(String url)
+   at IRCTCTatkalBot.Services.SessionManager.LoginAsync(CancellationToken ct) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 119
+[11:47:25.639] [Error  ] SessionManager.TakeScreenshot WebDriverException: An unknown exception was encountered sending an HTTP request to the remote WebDriver server for URL http://localhost:51329/session/6fbf498362cf78873e8cb820f204dee5/screenshot. The exception message was: No connection could be made because the target machine actively refused it. (localhost:51329)
+   at OpenQA.Selenium.Remote.HttpCommandExecutor.ExecuteAsync(Command commandToExecute)
+   at OpenQA.Selenium.Remote.DriverServiceCommandExecutor.ExecuteAsync(Command commandToExecute)
+   at OpenQA.Selenium.WebDriver.ExecuteAsync(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.Execute(String driverCommandToExecute, Dictionary`2 parameters)
+   at OpenQA.Selenium.WebDriver.GetScreenshot()
+   at IRCTCTatkalBot.Services.SessionManager.TakeScreenshot(String label) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\Services\SessionManager.cs:line 480
+[11:47:25.639] [Error  ] BookingEngine: FAILED – Login failed
+[11:47:25.639] [Warning] Orchestrator: Retrying in 500ms...

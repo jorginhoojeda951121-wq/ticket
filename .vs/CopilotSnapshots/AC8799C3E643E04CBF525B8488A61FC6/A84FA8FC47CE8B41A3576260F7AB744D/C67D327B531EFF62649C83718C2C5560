@@ -1,0 +1,458 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using OpenQA.Selenium;
+using OpenQA.Selenium.Support.UI;
+using IRCTCTatkalBot.Helpers;
+using IRCTCTatkalBot.Models;
+
+namespace IRCTCTatkalBot.Services
+{
+    /// <summary>
+    /// Core automation engine.
+    /// Executes the full booking flow for one account/config pair:
+    ///   Login → Search → Select Train → Fill Passengers → Payment
+    /// </summary>
+    public class BookingEngine
+    {
+        private readonly SessionManager _session;
+        private readonly BookingConfig _config;
+        private readonly BookingResult _result;
+        private IWebDriver Driver => _session.Driver;
+        private WebDriverWait Wait => new(Driver, TimeSpan.FromSeconds(20));
+
+        public event Action<BookingResult>? OnStatusChanged;
+
+        public BookingEngine(SessionManager session, BookingConfig config)
+        {
+            _session = session;
+            _config = config;
+            _result = new BookingResult { AccountId = _config.AccountId };
+        }
+
+        // ── Entry Point ───────────────────────────────────────────────
+
+        public async Task<BookingResult> RunAsync(CancellationToken ct = default)
+        {
+            try
+            {
+                // Step 1 – Login
+                UpdateStatus(BookingStatus.LoggingIn);
+                bool loggedIn = await _session.LoginAsync(ct);
+                if (!loggedIn) return Fail("Login failed");
+
+                // Step 2 – Search
+                UpdateStatus(BookingStatus.Searching);
+                bool searched = await SearchTrainAsync(ct);
+                if (!searched) return Fail("Train search failed");
+
+                // Step 3 – Select Train & Class
+                UpdateStatus(BookingStatus.SelectingTrain);
+                bool selected = await SelectTrainAndClassAsync(ct);
+                if (!selected) return Fail("Could not select train/class");
+
+                // Step 4 – Fill Passengers
+                UpdateStatus(BookingStatus.FillingPassengers);
+                bool filled = await FillPassengersAsync(ct);
+                if (!filled) return Fail("Failed to fill passenger details");
+
+                // Step 5 – Payment
+                UpdateStatus(BookingStatus.ProcessingPayment);
+                bool paid = await ProceedToPaymentAsync(ct);
+                if (!paid) return Fail("Payment step failed");
+
+                // Done
+                _result.Status = BookingStatus.Completed;
+                _result.CompletedAt = DateTime.Now;
+                Logger.Info($"BookingEngine: ✓ Booking completed in {_result.ElapsedSeconds:F1}s");
+            }
+            catch (OperationCanceledException)
+            {
+                _result.Status = BookingStatus.Cancelled;
+                _result.ErrorMessage = "Cancelled by user.";
+                Logger.Warning("BookingEngine: Booking cancelled.");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "BookingEngine.RunAsync");
+                _result.ScreenshotPath = _session.TakeScreenshot("error");
+                return Fail($"Unexpected error: {ex.Message}");
+            }
+            finally
+            {
+                OnStatusChanged?.Invoke(_result);
+            }
+
+            return _result;
+        }
+
+        // ── Step 2: Search ────────────────────────────────────────────
+
+        private async Task<bool> SearchTrainAsync(CancellationToken ct)
+        {
+            Logger.Info($"BookingEngine: Searching {_config.FromStation} → {_config.ToStation}");
+
+            try
+            {
+                // Fill "From" station
+                var fromInput = Wait.Until(d =>
+                    d.FindElement(By.CssSelector("input[placeholder*='From']")));
+                fromInput.Clear();
+                fromInput.SendKeys(_config.FromStation);
+                await Task.Delay(800, ct);
+                // Select first autocomplete suggestion
+                var fromSuggestion = Wait.Until(d =>
+                    d.FindElement(By.CssSelector(".ui-autocomplete-list-item")));
+                fromSuggestion.Click();
+
+                // Fill "To" station
+                var toInput = Driver.FindElement(
+                    By.CssSelector("input[placeholder*='To']"));
+                toInput.Clear();
+                toInput.SendKeys(_config.ToStation);
+                await Task.Delay(800, ct);
+                var toSuggestion = Wait.Until(d =>
+                    d.FindElement(By.CssSelector(".ui-autocomplete-list-item")));
+                toSuggestion.Click();
+
+                // Set Journey Date
+                var dateInput = Driver.FindElement(
+                    By.CssSelector("p-calendar input"));
+                dateInput.Clear();
+                dateInput.SendKeys(_config.JourneyDate.ToString("dd/MM/yyyy"));
+                await Task.Delay(300, ct);
+                // Close calendar picker
+                dateInput.SendKeys(Keys.Escape);
+
+                // Set Quota to TATKAL
+                var quotaDropdown = new SelectElement(
+                    Driver.FindElement(By.CssSelector("select[aria-label='Quota']")));
+                quotaDropdown.SelectByText(_config.Quota);
+
+                // Click Search button
+                var searchBtn = Driver.FindElement(
+                    By.CssSelector("button.search_btn, button[class*='train_Search']"));
+                _session.SafeClick(searchBtn);
+
+                await Task.Delay(2000, ct);
+                Logger.Info("BookingEngine: Search submitted.");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "BookingEngine.SearchTrainAsync");
+                _session.TakeScreenshot("search_error");
+                return false;
+            }
+        }
+
+        // ── Step 3: Select Train ──────────────────────────────────────
+
+        private async Task<bool> SelectTrainAndClassAsync(CancellationToken ct)
+        {
+            Logger.Info($"BookingEngine: Looking for train {_config.TrainNumber} class {_config.TrainClass}");
+
+            try
+            {
+                // Wait for results
+                Wait.Until(d => d.FindElements(
+                    By.CssSelector(".train-info-block, .trainList")).Count > 0);
+
+                // Find the specific train row
+                IWebElement? trainRow = null;
+                var trainRows = Driver.FindElements(By.CssSelector(".train-info-block"));
+
+                foreach (var row in trainRows)
+                {
+                    try
+                    {
+                        string num = row.FindElement(
+                            By.CssSelector(".trainNo, .train-number")).Text.Trim();
+                        if (num.Contains(_config.TrainNumber))
+                        {
+                            trainRow = row;
+                            break;
+                        }
+                    }
+                    catch { }
+                }
+
+                if (trainRow == null)
+                {
+                    // If train number not specified, take first available
+                    trainRow = trainRows.FirstOrDefault();
+                }
+
+                if (trainRow == null)
+                {
+                    Logger.Error("BookingEngine: No trains found in results.");
+                    return false;
+                }
+
+                // Find and click the correct class button (e.g. "3A", "SL", "2A")
+                var classBtns = trainRow.FindElements(
+                    By.CssSelector(".pre-avl, .available-status, [class*='AVAILABLE']"));
+
+                IWebElement? classBtn = null;
+                foreach (var btn in classBtns)
+                {
+                    if (btn.Text.Contains(_config.TrainClass, StringComparison.OrdinalIgnoreCase))
+                    {
+                        classBtn = btn;
+                        break;
+                    }
+                }
+
+                if (classBtn == null)
+                {
+                    Logger.Error($"BookingEngine: Class '{_config.TrainClass}' not found or not available.");
+                    _session.TakeScreenshot("no_class");
+                    return false;
+                }
+
+                _session.SafeClick(classBtn);
+                await Task.Delay(1500, ct);
+
+                // Click "Book Now" button that appears after class selection
+                var bookNowBtn = Wait.Until(d =>
+                    d.FindElement(By.CssSelector("button[class*='btnDefault'], button.trainBook")));
+                _session.SafeClick(bookNowBtn);
+
+                await Task.Delay(2000, ct);
+                Logger.Info("BookingEngine: Train and class selected.");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "BookingEngine.SelectTrainAndClassAsync");
+                _session.TakeScreenshot("select_error");
+                return false;
+            }
+        }
+
+        // ── Step 4: Fill Passengers ───────────────────────────────────
+
+        private async Task<bool> FillPassengersAsync(CancellationToken ct)
+        {
+            Logger.Info($"BookingEngine: Filling {_config.Passengers.Count} passenger(s)...");
+
+            try
+            {
+                // Wait for passenger form
+                Wait.Until(d => d.FindElement(
+                    By.CssSelector("app-passenger, .passenger-entry")));
+
+                for (int i = 0; i < _config.Passengers.Count; i++)
+                {
+                    var p = _config.Passengers[i];
+                    string rowSelector = $".passenger-entry:nth-child({i + 1})";
+
+                    // Name
+                    var nameField = Driver.FindElement(
+                        By.CssSelector($"{rowSelector} input[placeholder*='Name'], " +
+                                       $"input[formcontrolname='passengerName']:nth-of-type({i + 1})"));
+                    nameField.Clear();
+                    nameField.SendKeys(p.Name);
+
+                    // Age
+                    var ageField = Driver.FindElement(
+                        By.CssSelector($"{rowSelector} input[placeholder*='Age'], " +
+                                       $"input[formcontrolname='passengerAge']:nth-of-type({i + 1})"));
+                    ageField.Clear();
+                    ageField.SendKeys(p.Age.ToString());
+
+                    // Gender
+                    var genderDropdown = new SelectElement(Driver.FindElement(
+                        By.CssSelector($"{rowSelector} select[formcontrolname='passengerGender'], " +
+                                       $"select[aria-label='Gender']:nth-of-type({i + 1})")));
+                    genderDropdown.SelectByValue(p.Gender);
+
+                    // Berth preference
+                    if (!string.IsNullOrEmpty(p.BerthPreference) && p.BerthPreference != "NO")
+                    {
+                        try
+                        {
+                            var berthDropdown = new SelectElement(Driver.FindElement(
+                                By.CssSelector($"{rowSelector} select[formcontrolname='berthChoice']")));
+                            berthDropdown.SelectByText(p.BerthPreference);
+                        }
+                        catch { /* berth preference may not always be available */ }
+                    }
+
+                    Logger.Debug($"BookingEngine: Passenger {i + 1} ({p.Name}) filled.");
+                    await Task.Delay(200, ct);
+                }
+
+                // Handle "Add Insurance" popup if it appears — click "No"
+                await Task.Delay(500, ct);
+                try
+                {
+                    var noInsuranceBtn = Driver.FindElement(
+                        By.CssSelector("button[class*='InsuranceNo'], button[id*='noInsurance']"));
+                    noInsuranceBtn.Click();
+                    Logger.Debug("BookingEngine: Dismissed insurance popup.");
+                }
+                catch { }
+
+                // Click "Continue" / "Review Journey" button
+                var continueBtn = Wait.Until(d =>
+                    d.FindElement(By.CssSelector(
+                        "button[class*='btnDefault'][type='submit'], " +
+                        "button.train_Search")));
+                _session.SafeClick(continueBtn);
+
+                await Task.Delay(2000, ct);
+                Logger.Info("BookingEngine: Passenger details submitted.");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "BookingEngine.FillPassengersAsync");
+                _session.TakeScreenshot("passenger_error");
+                return false;
+            }
+        }
+
+        // ── Step 5: Payment ───────────────────────────────────────────
+
+        private async Task<bool> ProceedToPaymentAsync(CancellationToken ct)
+        {
+            Logger.Info("BookingEngine: Proceeding to payment...");
+
+            try
+            {
+                // Solve captcha on review page if present
+                await Task.Delay(1500, ct);
+                try
+                {
+                    var captchaImg = Driver.FindElement(By.CssSelector("app-captcha img"));
+                    if (captchaImg.Displayed)
+                    {
+                        string src = captchaImg.GetAttribute("src") ?? "";
+                        string base64 = src.StartsWith("data:")
+                            ? src.Substring(src.IndexOf(',') + 1)
+                            : Convert.ToBase64String(
+                                await new System.Net.Http.HttpClient()
+                                    .GetByteArrayAsync(src, ct));
+
+                        var solver = new CaptchaSolver(AppSettings.CaptchaApiKey);
+                        string? answer = await solver.SolveImageCaptchaAsync(base64, ct);
+
+                        if (!string.IsNullOrEmpty(answer))
+                        {
+                            var captchaInput = Driver.FindElement(
+                                By.CssSelector("input[formcontrolname='captcha']"));
+                            captchaInput.Clear();
+                            captchaInput.SendKeys(answer);
+                        }
+                    }
+                }
+                catch { /* no captcha on this page, skip */ }
+
+                // Click "Proceed to Payment"
+                var payBtn = Wait.Until(d =>
+                    d.FindElement(By.CssSelector(
+                        "button[class*='btnDefault'][aria-label*='Pay'], " +
+                        "button[class*='proceed']")));
+                _session.SafeClick(payBtn);
+
+                await Task.Delay(2000, ct);
+
+                // Select payment method
+                await SelectPaymentMethodAsync(ct);
+
+                // Wait for PNR or success confirmation
+                await Task.Delay(5000, ct);
+                string? pnr = TryExtractPnr();
+                if (!string.IsNullOrEmpty(pnr))
+                {
+                    _result.PnrNumber = pnr;
+                    Logger.Info($"BookingEngine: PNR = {pnr}");
+                }
+
+                _result.ScreenshotPath = _session.TakeScreenshot("booking_success");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "BookingEngine.ProceedToPaymentAsync");
+                _session.TakeScreenshot("payment_error");
+                return false;
+            }
+        }
+
+        private async Task SelectPaymentMethodAsync(CancellationToken ct)
+        {
+            await Task.Delay(1500, ct);
+
+            switch (_config.PaymentMethod.ToUpperInvariant())
+            {
+                case "UPI":
+                    try
+                    {
+                        var upiTab = Wait.Until(d =>
+                            d.FindElement(By.CssSelector(
+                                "[id*='UPI'], [aria-label*='UPI'], label[for*='upi']")));
+                        _session.SafeClick(upiTab);
+                        await Task.Delay(800, ct);
+
+                        if (!string.IsNullOrEmpty(_config.UpiId))
+                        {
+                            var upiInput = Driver.FindElement(
+                                By.CssSelector("input[placeholder*='UPI'], input[id*='upiId']"));
+                            upiInput.Clear();
+                            upiInput.SendKeys(_config.UpiId);
+                        }
+
+                        var payNowBtn = Driver.FindElement(
+                            By.CssSelector("button[class*='payNow'], button[aria-label*='Pay Now']"));
+                        _session.SafeClick(payNowBtn);
+                        Logger.Info("BookingEngine: UPI payment initiated.");
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error(ex, "UPI payment selection");
+                    }
+                    break;
+
+                default:
+                    Logger.Warning($"BookingEngine: Payment method '{_config.PaymentMethod}' not auto-handled. Manual action needed.");
+                    break;
+            }
+        }
+
+        private string? TryExtractPnr()
+        {
+            try
+            {
+                var pnrEl = Driver.FindElement(
+                    By.CssSelector(".pnr-no, [class*='pnrNo'], strong"));
+                string text = pnrEl.Text.Trim();
+                if (text.Length >= 10 && text.All(char.IsDigit)) return text;
+            }
+            catch { }
+            return null;
+        }
+
+        // ── Helpers ───────────────────────────────────────────────────
+
+        private BookingResult Fail(string reason)
+        {
+            _result.Status = BookingStatus.Failed;
+            _result.ErrorMessage = reason;
+            _result.CompletedAt = DateTime.Now;
+            Logger.Error($"BookingEngine: FAILED – {reason}");
+            OnStatusChanged?.Invoke(_result);
+            return _result;
+        }
+
+        private void UpdateStatus(BookingStatus status)
+        {
+            _result.Status = status;
+            Logger.Info($"BookingEngine: → {status}");
+            OnStatusChanged?.Invoke(_result);
+        }
+    }
+}

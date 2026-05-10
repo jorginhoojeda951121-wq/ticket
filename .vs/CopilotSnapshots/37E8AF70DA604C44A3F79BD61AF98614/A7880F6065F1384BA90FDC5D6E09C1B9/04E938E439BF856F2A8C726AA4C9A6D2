@@ -1,0 +1,27 @@
+﻿using System;
+using System.Globalization;
+using System.Windows.Data;
+
+namespace IRCTCTatkalBot.Converters
+{
+    public class DateFormatConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is DateTime dt && dt != DateTime.MinValue)
+            {
+                return dt.ToString("dd/MM/yyyy");
+            }
+            return "";
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is string str && DateTime.TryParseExact(str, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt))
+            {
+                return dt;
+            }
+            return DateTime.Today;
+        }
+    }
+}

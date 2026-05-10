@@ -1,0 +1,552 @@
+﻿using System;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
+using OpenQA.Selenium;
+using OpenQA.Selenium.Chrome;
+using OpenQA.Selenium.Support.UI;
+using IRCTCTatkalBot;
+using IRCTCTatkalBot.Helpers;
+using IRCTCTatkalBot.Models;
+
+namespace IRCTCTatkalBot.Services
+{
+    /// <summary>
+    /// Manages a single Selenium WebDriver session for one account.
+    /// Responsible for:
+    ///   - Creating and configuring the ChromeDriver
+    ///   - Handling login (username/password + captcha)
+    ///   - Safe element interaction
+    ///   - Screenshot capture for debugging
+    /// </summary>
+    public class SessionManager : IDisposable
+    {
+        private readonly Account _account;
+        private readonly AccountManager _accountManager;
+        private readonly ICaptchaSolver _captchaSolver;
+        private IWebDriver? _driver;
+        private bool _disposed;
+        private bool _loginVerifiedOnce;
+
+        public IWebDriver Driver
+        {
+            get
+            {
+                if (_driver == null)
+                    throw new InvalidOperationException("Driver not initialized. Call StartDriver() first.");
+                return _driver;
+            }
+        }
+
+        /// <summary>Captcha solver used for login and forwarded to booking steps.</summary>
+        public ICaptchaSolver CaptchaSolver => _captchaSolver;
+
+        public SessionManager(Account account, AccountManager accountManager, ICaptchaSolver captchaSolver)
+        {
+            _account = account ?? throw new ArgumentNullException(nameof(account));
+            _accountManager = accountManager ?? throw new ArgumentNullException(nameof(accountManager));
+            _captchaSolver = captchaSolver ?? throw new ArgumentNullException(nameof(captchaSolver));
+        }
+
+        // ── Driver Lifecycle ──────────────────────────────────────────
+
+        /// <summary>
+        /// Creates and configures a new ChromeDriver instance.
+        /// </summary>
+        public void StartDriver()
+        {
+            if (_driver != null)
+                throw new InvalidOperationException("Driver already started. Dispose first before starting a new one.");
+
+            try
+            {
+                var options = new ChromeOptions();
+
+                // Suppress notifications and popups
+                options.AddArgument("--disable-notifications");
+                options.AddArgument("--disable-popup-blocking");
+                options.AddArgument("--disable-extensions");
+
+                if (!AppSettings.Instance.ShowBrowserWindows)
+                    options.AddArgument("--headless=new");
+
+                // Isolated profile per account (prevents session collisions between parallel logins)
+                string profileDir = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "IRCTCTatkalBot", "profiles", _account.Id.ToString("N"));
+                Directory.CreateDirectory(profileDir);
+                options.AddArgument($"--user-data-dir={profileDir}");
+
+                // Use proxy if configured
+                if (!string.IsNullOrWhiteSpace(_account.ProxyAddress))
+                {
+                    options.AddArgument($"--proxy-server={_account.ProxyAddress}");
+                }
+
+                string chromePath = (AppSettings.Instance.ChromeBinaryPath ?? string.Empty).Trim();
+                if (chromePath.Length > 0 && File.Exists(chromePath))
+                    options.BinaryLocation = chromePath;
+
+                _driver = ChromeDriverFactory.Create(options);
+                _driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(10);
+
+                Logger.Info($"SessionManager: ChromeDriver started for {_account.Username}");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "SessionManager.StartDriver");
+                throw;
+            }
+        }
+
+        // ── Login Flow ────────────────────────────────────────────────
+
+        /// <summary>
+        /// Navigates to IRCTC and logs in with the account credentials + captcha.
+        /// </summary>
+        public async Task<bool> LoginAsync(CancellationToken ct = default)
+        {
+            if (_driver == null)
+            {
+                Logger.Error("SessionManager.LoginAsync: Driver not initialized");
+                return false;
+            }
+
+            try
+            {
+                Logger.Info($"SessionManager: Logging in {_account.Username}...");
+
+                // Current IRCTC UX: landing page is train-search; login fields live in a modal opened via "LOGIN / REGISTER".
+                _driver.Navigate().GoToUrl("https://www.irctc.co.in/nget/train-search");
+                await Task.Delay(1200, ct);
+
+                var wait = new WebDriverWait(_driver, TimeSpan.FromSeconds(30));
+
+                // If the reused profile is already logged in, don't force the login modal flow.
+                if (IsAlreadyLoggedIn(_driver))
+                {
+                    Logger.Info($"SessionManager: ✓ Already logged in for {_account.Username} (skipping login).");
+                    return true;
+                }
+
+                if (!IsUserIdFieldVisible(_driver))
+                {
+                    Logger.Info("SessionManager: Login form not visible — clicking LOGIN / REGISTER...");
+                    ClickIrctcLoginRegisterButton(wait);
+                    await Task.Delay(900, ct);
+                }
+
+                // Username field inside modal (Angular may render attribute as formcontrolname)
+                var usernameField = wait.Until(d => FindFirstVisible(d,
+                    By.CssSelector("input[formcontrolname='userid'], input[formControlName='userid']")))
+                    ?? throw new WebDriverException("User id field not found.");
+
+                // Fill username
+                usernameField.Clear();
+                usernameField.SendKeys(_account.Username);
+                await Task.Delay(500, ct);
+
+                var passwordField = FindFirstVisible(_driver,
+                    By.CssSelector("input[formcontrolname='password'], input[formControlName='password']"))
+                    ?? throw new WebDriverException("Password field not found after opening login.");
+                passwordField.Clear();
+                passwordField.SendKeys(_accountManager.GetPassword(_account));
+                await Task.Delay(500, ct);
+
+                // Captcha is not always present (depends on IRCTC UX / A/B tests / risk scoring).
+                var captchaInput = FindCaptchaInput(_driver);
+                string? captchaText;
+
+                if (captchaInput == null)
+                {
+                    Logger.Warning("SessionManager: Captcha field not found — attempting login without captcha.");
+                    captchaText = null;
+                }
+                else
+                {
+                    if (_captchaSolver is ManualCaptchaSolver)
+                    {
+                        captchaText = await ManualCaptchaSolver.WaitForUserEntryAsync(captchaInput, ct);
+                    }
+                    else
+                    {
+                        var captchaImgWait = new WebDriverWait(_driver, TimeSpan.FromSeconds(15));
+                        var captchaElement = captchaImgWait.Until(d => FindFirstVisibleImage(d,
+                            By.CssSelector("img[src*='captcha'], img[src*='Captcha']")))
+                            ?? throw new WebDriverException("Captcha image not found in login dialog.");
+                        string captchaBase64 = GetElementScreenshot(captchaElement);
+                        captchaText = await _captchaSolver.SolveImageCaptchaAsync(captchaBase64, ct);
+                    }
+                }
+
+                if (captchaInput != null && string.IsNullOrWhiteSpace(captchaText))
+                {
+                    Logger.Warning("SessionManager: Captcha missing or solving failed");
+                    TakeScreenshot("captcha_failed");
+                    return false;
+                }
+
+                if (captchaInput != null && _captchaSolver is not ManualCaptchaSolver)
+                {
+                    captchaInput.Clear();
+                    captchaInput.SendKeys(captchaText);
+                    await Task.Delay(500, ct);
+                }
+                else
+                    await Task.Delay(300, ct);
+
+                // Submit inside modal (may be more than one submit on page — prefer login dialog)
+                // Click submit button that belongs to the currently opened login modal/form.
+                // IRCTC pages often contain multiple "submit" buttons outside the modal.
+                IWebElement rootForSubmit = captchaInput ?? passwordField ?? usernameField;
+                var loginBtn = FindLoginSubmitButton(rootForSubmit);
+                SafeClick(loginBtn);
+
+                // Post-login: IRCTC frequently redirects or re-renders the header.
+                // Use the same signals the user sees ("Welcome …", "MY ACCOUNT", Logout).
+                wait.Until(d => IsAlreadyLoggedIn(d));
+                _loginVerifiedOnce = true;
+                Logger.Info($"SessionManager: ✓ Login successful for {_account.Username}");
+                return true;
+            }
+            catch (OperationCanceledException)
+            {
+                Logger.Warning("SessionManager.LoginAsync: Cancelled");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "SessionManager.LoginAsync");
+                TakeScreenshot("login_error");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Fast check for an existing authenticated session in the current tab.
+        /// Once login has succeeded once in this session, it will return true immediately without re-checking
+        /// unless the driver state suggests we've been logged out.
+        /// </summary>
+        public bool IsLoggedIn()
+        {
+            if (_driver == null) return false;
+
+            // If we've successfully logged in before, verify we're still logged in or check if UI has changed
+            if (_loginVerifiedOnce)
+            {
+                // Quick verification: if logout or account links are present, we're still logged in
+                if (IsAlreadyLoggedIn(_driver))
+                {
+                    return true;
+                }
+                // If previously verified but now missing logout links, we may have been logged out
+                // Log this and allow re-login
+                Logger.Warning("SessionManager.IsLoggedIn: Previously logged in but session appears to have ended.");
+                _loginVerifiedOnce = false;
+                return false;
+            }
+
+            return IsAlreadyLoggedIn(_driver);
+        }
+
+        private static bool IsAlreadyLoggedIn(IWebDriver driver)
+        {
+            // IRCTC changes the header frequently; check a few robust signals.
+            try
+            {
+                if (driver.FindElements(By.XPath("//a[contains(.,'Logout') or contains(.,'LOGOUT') or contains(.,'Log out')]")).Count > 0)
+                    return true;
+                if (driver.FindElements(By.CssSelector("a[href*='logout']")).Count > 0)
+                    return true;
+                if (driver.FindElements(By.XPath("//*[contains(normalize-space(.),'Welcome') and contains(.,'(')]")).Count > 0)
+                    return true;
+                // Seen in current UI after login (screenshot): "MY ACCOUNT" appears in header.
+                if (driver.FindElements(By.XPath("//*[contains(translate(normalize-space(.),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'my account')]")).Count > 0)
+                    return true;
+            }
+            catch
+            {
+                // ignore transient DOM issues
+            }
+
+            return false;
+        }
+
+        private static IWebElement? FindCaptchaInput(IWebDriver driver)
+        {
+            foreach (var by in new[]
+                     {
+                         By.CssSelector("input[formcontrolname='captcha'], input[formControlName='captcha']"),
+                         By.CssSelector("input[placeholder*='captcha' i]"),
+                         By.CssSelector("input[id*='captcha' i], input[name*='captcha' i]"),
+                     })
+            {
+                var el = FindFirstVisible(driver, by);
+                if (el != null) return el;
+            }
+
+            return null;
+        }
+
+        private static bool IsUserIdFieldVisible(IWebDriver driver)
+        {
+            foreach (var by in new[]
+                     {
+                         By.CssSelector("input[formcontrolname='userid']"),
+                         By.CssSelector("input[formControlName='userid']"),
+                     })
+            {
+                foreach (var el in driver.FindElements(by))
+                {
+                    try
+                    {
+                        if (el.Displayed)
+                            return true;
+                    }
+                    catch
+                    {
+                        /* stale */
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>IRCTC shows "LOGIN / REGISTER" on the header; the Angular login form opens in a modal.</summary>
+        private void ClickIrctcLoginRegisterButton(WebDriverWait wait)
+        {
+            var trigger = wait.Until(driver =>
+            {
+                foreach (var by in new[]
+                         {
+                             By.XPath("//button[contains(normalize-space(.), 'LOGIN')]"),
+                             By.XPath("//a[contains(normalize-space(.), 'LOGIN')]"),
+                             By.PartialLinkText("LOGIN"),
+                             By.XPath("//*[@role='button' and contains(., 'LOGIN')]"),
+                         })
+                {
+                    try
+                    {
+                        foreach (var el in driver.FindElements(by))
+                        {
+                            try
+                            {
+                                if (el.Displayed && el.Enabled)
+                                    return el;
+                            }
+                            catch
+                            {
+                                /* stale */
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        /* ignore */
+                    }
+                }
+
+                return null;
+            });
+
+            ArgumentNullException.ThrowIfNull(trigger);
+            SafeClick(trigger);
+        }
+
+        private static IWebElement? FindFirstVisible(IWebDriver driver, By by)
+        {
+            foreach (var el in driver.FindElements(by))
+            {
+                try
+                {
+                    if (el.Displayed)
+                        return el;
+                }
+                catch
+                {
+                    /* stale */
+                }
+            }
+
+            return null;
+        }
+
+        private static IWebElement? FindFirstVisibleImage(IWebDriver driver, By by)
+        {
+            foreach (var el in driver.FindElements(by))
+            {
+                try
+                {
+                    if (el.Displayed && el.TagName.Equals("img", StringComparison.OrdinalIgnoreCase))
+                        return el;
+                }
+                catch
+                {
+                    /* stale */
+                }
+            }
+
+            return null;
+        }
+
+        private IWebElement FindLoginSubmitButton(IWebElement root)
+        {
+            // 1) Prefer buttons inside the nearest form of the login modal.
+            foreach (var by in new[]
+                     {
+                         By.XPath("ancestor::form[1]//button[@type='submit']"),
+                         By.XPath("ancestor::form[1]//button[(@type='button' or @type='submit') and (contains(translate(normalize-space(.),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'login') or contains(translate(normalize-space(.),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'log in'))]"),
+                         By.XPath("ancestor::form[1]//input[@type='submit' or @role='button' or @value='LOGIN' or @value='Log In' or @value='Log in']")
+                     })
+            {
+                foreach (var el in root.FindElements(by))
+                {
+                    try
+                    {
+                        if (el.Displayed && el.Enabled)
+                            return el;
+                    }
+                    catch
+                    {
+                        /* stale */
+                    }
+                }
+            }
+
+            // 2) Fallback: scan entire DOM (less reliable, but better than failing hard).
+            foreach (var el in _driver!.FindElements(By.CssSelector("button[type='submit'], input[type='submit']")))
+            {
+                try
+                {
+                    if (el.Displayed && el.Enabled)
+                        return el;
+                }
+                catch
+                {
+                    /* stale */
+                }
+            }
+
+            foreach (var el in _driver!.FindElements(By.XPath("//button[contains(translate(normalize-space(.),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'login') or contains(translate(normalize-space(.),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'log in')]")))
+            {
+                try
+                {
+                    if (el.Displayed && el.Enabled)
+                        return el;
+                }
+                catch
+                {
+                    /* stale */
+                }
+            }
+
+            throw new WebDriverException("Could not find clickable login submit button.");
+        }
+
+        // ── Helper Methods ────────────────────────────────────────────
+
+        /// <summary>
+        /// Safely clicks an element, scrolling it into view if necessary.
+        /// </summary>
+        public void SafeClick(IWebElement element)
+        {
+            try
+            {
+                var js = (IJavaScriptExecutor)Driver;
+                js.ExecuteScript("arguments[0].scrollIntoView(true);", element);
+                Task.Delay(200).Wait();
+                element.Click();
+            }
+            catch (Exception firstClickEx) when (
+                firstClickEx is ElementNotInteractableException ||
+                firstClickEx is ElementClickInterceptedException ||
+                firstClickEx is StaleElementReferenceException)
+            {
+                // Fallback to JavaScript click, then Enter fallback.
+                try
+                {
+                    var js = (IJavaScriptExecutor)Driver;
+                    js.ExecuteScript("arguments[0].click();", element);
+                }
+                catch
+                {
+                    // Sometimes JS click still doesn't trigger the handler; try keyboard submit.
+                    try
+                    {
+                        element.SendKeys(Keys.Enter);
+                    }
+                    catch { /* ignore */ }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Captures a screenshot and saves it to the app data folder.
+        /// </summary>
+        public string TakeScreenshot(string label = "screenshot")
+        {
+            try
+            {
+                string screenshotDir = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "IRCTCTatkalBot", "Screenshots");
+                Directory.CreateDirectory(screenshotDir);
+
+                string filename = $"{label}_{DateTime.Now:yyyyMMdd_HHmmss}.png";
+                string filePath = Path.Combine(screenshotDir, filename);
+
+                var screenshot = ((ITakesScreenshot)Driver).GetScreenshot();
+                screenshot.SaveAsFile(filePath);
+
+                Logger.Info($"SessionManager: Screenshot saved to {filePath}");
+                return filePath;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "SessionManager.TakeScreenshot");
+                return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Gets a screenshot of a specific element (for captcha solving).
+        /// </summary>
+        private string GetElementScreenshot(IWebElement element)
+        {
+            try
+            {
+                var screenshot = ((ITakesScreenshot)element).GetScreenshot();
+                return Convert.ToBase64String(screenshot.AsByteArray);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "SessionManager.GetElementScreenshot");
+                return string.Empty;
+            }
+        }
+
+        // ── IDisposable ───────────────────────────────────────────────
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+
+            try
+            {
+                _driver?.Quit();
+                _driver?.Dispose();
+                Logger.Info("SessionManager: Driver disposed");
+            }
+            catch (Exception ex)
+            {
+                Logger.Warning($"SessionManager.Dispose: {ex.Message}");
+            }
+
+            _disposed = true;
+            GC.SuppressFinalize(this);
+        }
+
+        ~SessionManager() => Dispose();
+    }
+}

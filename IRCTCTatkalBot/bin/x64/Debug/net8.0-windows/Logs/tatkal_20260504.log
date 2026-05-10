@@ -1,0 +1,10 @@
+[01:28:46.765] [Info   ] === Application Starting ===
+[01:28:46.774] [Info   ] Loading AppSettings...
+[01:28:46.871] [Info   ] AppSettings loaded successfully
+[01:28:46.871] [Info   ] === Application Started Successfully ===
+[01:28:47.166] [Error  ] ClassCombo_SelectionChanged NullReferenceException: Object reference not set to an instance of an object.
+   at IRCTCTatkalBot.MainWindow.ClassCombo_SelectionChanged(Object sender, SelectionChangedEventArgs e) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml.cs:line 101
+[01:28:47.188] [Info   ] MainWindow: Initialized XAML
+[01:28:47.189] [Info   ] MainWindow: ViewModel created
+[01:28:47.189] [Info   ] MainWindow: DataContext set
+[01:29:36.238] [Info   ] Orchestrator: No booking configs supplied.

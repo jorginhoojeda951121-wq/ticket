@@ -1,0 +1,182 @@
+[21:57:05.846] [Info   ] App: Startup successful
+[21:57:06.241] [Error  ] ClassCombo_SelectionChanged NullReferenceException: Object reference not set to an instance of an object.
+   at IRCTCTatkalBot.MainWindow.ClassCombo_SelectionChanged(Object sender, SelectionChangedEventArgs e) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml.cs:line 101
+[21:57:06.274] [Info   ] MainWindow: Initialized XAML
+[21:57:06.275] [Info   ] MainWindow: ViewModel created
+[21:57:06.276] [Info   ] MainWindow: DataContext set
+[22:00:06.335] [Info   ] === Application Starting ===
+[22:00:06.344] [Info   ] Loading AppSettings...
+[22:00:06.348] [Info   ] AppSettings loaded successfully
+[22:00:06.348] [Info   ] === Application Started Successfully ===
+[22:00:06.714] [Error  ] ClassCombo_SelectionChanged NullReferenceException: Object reference not set to an instance of an object.
+   at IRCTCTatkalBot.MainWindow.ClassCombo_SelectionChanged(Object sender, SelectionChangedEventArgs e) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml.cs:line 101
+[22:00:06.737] [Info   ] MainWindow: Initialized XAML
+[22:00:06.738] [Info   ] MainWindow: ViewModel created
+[22:00:06.738] [Info   ] MainWindow: DataContext set
+[22:03:14.120] [Info   ] === Application Starting ===
+[22:03:14.131] [Info   ] Loading AppSettings...
+[22:03:14.137] [Info   ] AppSettings loaded successfully
+[22:03:14.137] [Info   ] === Application Started Successfully ===
+[22:03:14.570] [Error  ] ClassCombo_SelectionChanged NullReferenceException: Object reference not set to an instance of an object.
+   at IRCTCTatkalBot.MainWindow.ClassCombo_SelectionChanged(Object sender, SelectionChangedEventArgs e) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml.cs:line 101
+[22:03:14.596] [Info   ] MainWindow: Initialized XAML
+[22:03:14.597] [Info   ] MainWindow: ViewModel created
+[22:03:14.598] [Info   ] MainWindow: DataContext set
+[22:07:07.198] [Info   ] === Application Starting ===
+[22:07:07.207] [Info   ] Loading AppSettings...
+[22:07:07.211] [Info   ] AppSettings loaded successfully
+[22:07:07.211] [Info   ] === Application Started Successfully ===
+[22:07:07.574] [Error  ] ClassCombo_SelectionChanged NullReferenceException: Object reference not set to an instance of an object.
+   at IRCTCTatkalBot.MainWindow.ClassCombo_SelectionChanged(Object sender, SelectionChangedEventArgs e) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml.cs:line 101
+[22:07:07.593] [Info   ] MainWindow: Initialized XAML
+[22:07:07.594] [Info   ] MainWindow: ViewModel created
+[22:07:07.594] [Info   ] MainWindow: DataContext set
+[22:31:01.728] [Info   ] === Application Starting ===
+[22:31:01.737] [Info   ] Loading AppSettings...
+[22:31:01.744] [Info   ] AppSettings loaded successfully
+[22:31:01.744] [Info   ] === Application Started Successfully ===
+[22:31:02.431] [Error  ] ClassCombo_SelectionChanged NullReferenceException: Object reference not set to an instance of an object.
+   at IRCTCTatkalBot.MainWindow.ClassCombo_SelectionChanged(Object sender, SelectionChangedEventArgs e) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml.cs:line 101
+[22:31:02.473] [Info   ] MainWindow: Initialized XAML
+[22:31:02.475] [Info   ] MainWindow: ViewModel created
+[22:31:02.476] [Info   ] MainWindow: DataContext set
+[22:33:32.516] [Info   ] === Application Starting ===
+[22:33:32.527] [Info   ] Loading AppSettings...
+[22:33:32.566] [Info   ] AppSettings loaded successfully
+[22:33:32.566] [Info   ] === Application Started Successfully ===
+[22:33:32.972] [Error  ] ClassCombo_SelectionChanged NullReferenceException: Object reference not set to an instance of an object.
+   at IRCTCTatkalBot.MainWindow.ClassCombo_SelectionChanged(Object sender, SelectionChangedEventArgs e) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml.cs:line 101
+[22:33:32.994] [Info   ] MainWindow: Initialized XAML
+[22:33:32.995] [Info   ] MainWindow: ViewModel created
+[22:33:32.995] [Info   ] MainWindow: DataContext set
+[22:35:32.955] [Info   ] === Application Starting ===
+[22:35:32.964] [Info   ] Loading AppSettings...
+[22:35:32.996] [Info   ] AppSettings loaded successfully
+[22:35:32.996] [Info   ] === Application Started Successfully ===
+[22:35:33.344] [Error  ] MainWindow.Constructor XamlParseException: 'Set property 'System.Windows.Setter.Property' threw an exception.' Line number '79' and line position '14'.
+   at System.Windows.Markup.XamlReader.RewrapException(Exception e, IXamlLineInfo lineInfo, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.Load(XamlReader xamlReader, IXamlObjectWriterFactory writerFactory, Boolean skipJournaledProperties, Object rootObject, XamlObjectWriterSettings settings, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.LoadBaml(XamlReader xamlReader, Boolean skipJournaledProperties, Object rootObject, XamlAccessLevel accessLevel, Uri baseUri)
+   at System.Windows.Markup.XamlReader.LoadBaml(Stream stream, ParserContext parserContext, Object parent, Boolean closeStream)
+   at System.Windows.Application.LoadComponent(Object component, Uri resourceLocator)
+   at IRCTCTatkalBot.MainWindow.InitializeComponent() in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml:line 1
+   at IRCTCTatkalBot.MainWindow..ctor() in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml.cs:line 18
+[22:35:35.135] [Error  ] Dispatcher.UnhandledException XamlParseException: 'Set property 'System.Windows.Setter.Property' threw an exception.' Line number '79' and line position '14'.
+   at System.Windows.Markup.XamlReader.RewrapException(Exception e, IXamlLineInfo lineInfo, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.Load(XamlReader xamlReader, IXamlObjectWriterFactory writerFactory, Boolean skipJournaledProperties, Object rootObject, XamlObjectWriterSettings settings, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.LoadBaml(XamlReader xamlReader, Boolean skipJournaledProperties, Object rootObject, XamlAccessLevel accessLevel, Uri baseUri)
+   at System.Windows.Markup.XamlReader.LoadBaml(Stream stream, ParserContext parserContext, Object parent, Boolean closeStream)
+   at System.Windows.Application.LoadBamlStreamWithSyncInfo(Stream stream, ParserContext pc)
+   at System.Windows.Application.DoStartup()
+   at System.Windows.Application.<.ctor>b__1_0(Object unused)
+   at System.Windows.Threading.ExceptionWrapper.InternalRealCall(Delegate callback, Object args, Int32 numArgs)
+   at System.Windows.Threading.ExceptionWrapper.TryCatchWhen(Object source, Delegate callback, Object args, Int32 numArgs, Delegate catchHandler)
+[22:35:36.926] [Error  ] AppDomain.UnhandledException XamlParseException: 'Set property 'System.Windows.Setter.Property' threw an exception.' Line number '79' and line position '14'.
+   at System.Windows.Markup.XamlReader.RewrapException(Exception e, IXamlLineInfo lineInfo, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.Load(XamlReader xamlReader, IXamlObjectWriterFactory writerFactory, Boolean skipJournaledProperties, Object rootObject, XamlObjectWriterSettings settings, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.LoadBaml(XamlReader xamlReader, Boolean skipJournaledProperties, Object rootObject, XamlAccessLevel accessLevel, Uri baseUri)
+   at System.Windows.Markup.XamlReader.LoadBaml(Stream stream, ParserContext parserContext, Object parent, Boolean closeStream)
+   at System.Windows.Application.LoadBamlStreamWithSyncInfo(Stream stream, ParserContext pc)
+   at System.Windows.Application.DoStartup()
+   at System.Windows.Application.<.ctor>b__1_0(Object unused)
+   at System.Windows.Threading.ExceptionWrapper.InternalRealCall(Delegate callback, Object args, Int32 numArgs)
+   at System.Windows.Threading.ExceptionWrapper.TryCatchWhen(Object source, Delegate callback, Object args, Int32 numArgs, Delegate catchHandler)
+   at System.Windows.Threading.DispatcherOperation.InvokeImpl()
+   at MS.Internal.CulturePreservingExecutionContext.CallbackWrapper(Object obj)
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+   at MS.Internal.CulturePreservingExecutionContext.Run(CulturePreservingExecutionContext executionContext, ContextCallback callback, Object state)
+   at System.Windows.Threading.DispatcherOperation.Invoke()
+   at System.Windows.Threading.Dispatcher.ProcessQueue()
+   at System.Windows.Threading.Dispatcher.WndProcHook(IntPtr hwnd, Int32 msg, IntPtr wParam, IntPtr lParam, Boolean& handled)
+   at MS.Win32.HwndWrapper.WndProc(IntPtr hwnd, Int32 msg, IntPtr wParam, IntPtr lParam, Boolean& handled)
+   at MS.Win32.HwndSubclass.DispatcherCallbackOperation(Object o)
+   at System.Windows.Threading.ExceptionWrapper.InternalRealCall(Delegate callback, Object args, Int32 numArgs)
+   at System.Windows.Threading.ExceptionWrapper.TryCatchWhen(Object source, Delegate callback, Object args, Int32 numArgs, Delegate catchHandler)
+   at System.Windows.Threading.Dispatcher.LegacyInvokeImpl(DispatcherPriority priority, TimeSpan timeout, Delegate method, Object args, Int32 numArgs)
+   at MS.Win32.HwndSubclass.SubclassWndProc(IntPtr hwnd, Int32 msg, IntPtr wParam, IntPtr lParam)
+   at MS.Win32.UnsafeNativeMethods.DispatchMessage(MSG& msg)
+   at System.Windows.Threading.Dispatcher.PushFrameImpl(DispatcherFrame frame)
+   at System.Windows.Application.RunDispatcher(Object ignore)
+   at System.Windows.Application.RunInternal(Window window)
+   at IRCTCTatkalBot.App.Main()
+[22:35:40.397] [Info   ] === Application Starting ===
+[22:35:40.405] [Info   ] Loading AppSettings...
+[22:35:40.437] [Info   ] AppSettings loaded successfully
+[22:35:40.437] [Info   ] === Application Started Successfully ===
+[22:35:40.768] [Error  ] MainWindow.Constructor XamlParseException: 'Set property 'System.Windows.Setter.Property' threw an exception.' Line number '79' and line position '14'.
+   at System.Windows.Markup.XamlReader.RewrapException(Exception e, IXamlLineInfo lineInfo, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.Load(XamlReader xamlReader, IXamlObjectWriterFactory writerFactory, Boolean skipJournaledProperties, Object rootObject, XamlObjectWriterSettings settings, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.LoadBaml(XamlReader xamlReader, Boolean skipJournaledProperties, Object rootObject, XamlAccessLevel accessLevel, Uri baseUri)
+   at System.Windows.Markup.XamlReader.LoadBaml(Stream stream, ParserContext parserContext, Object parent, Boolean closeStream)
+   at System.Windows.Application.LoadComponent(Object component, Uri resourceLocator)
+   at IRCTCTatkalBot.MainWindow.InitializeComponent() in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml:line 1
+   at IRCTCTatkalBot.MainWindow..ctor() in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml.cs:line 18
+[22:35:55.943] [Error  ] Dispatcher.UnhandledException XamlParseException: 'Set property 'System.Windows.Setter.Property' threw an exception.' Line number '79' and line position '14'.
+   at System.Windows.Markup.XamlReader.RewrapException(Exception e, IXamlLineInfo lineInfo, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.Load(XamlReader xamlReader, IXamlObjectWriterFactory writerFactory, Boolean skipJournaledProperties, Object rootObject, XamlObjectWriterSettings settings, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.LoadBaml(XamlReader xamlReader, Boolean skipJournaledProperties, Object rootObject, XamlAccessLevel accessLevel, Uri baseUri)
+   at System.Windows.Markup.XamlReader.LoadBaml(Stream stream, ParserContext parserContext, Object parent, Boolean closeStream)
+   at System.Windows.Application.LoadBamlStreamWithSyncInfo(Stream stream, ParserContext pc)
+   at System.Windows.Application.DoStartup()
+   at System.Windows.Application.<.ctor>b__1_0(Object unused)
+   at System.Windows.Threading.ExceptionWrapper.InternalRealCall(Delegate callback, Object args, Int32 numArgs)
+   at System.Windows.Threading.ExceptionWrapper.TryCatchWhen(Object source, Delegate callback, Object args, Int32 numArgs, Delegate catchHandler)
+[22:36:04.650] [Error  ] AppDomain.UnhandledException XamlParseException: 'Set property 'System.Windows.Setter.Property' threw an exception.' Line number '79' and line position '14'.
+   at System.Windows.Markup.XamlReader.RewrapException(Exception e, IXamlLineInfo lineInfo, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.Load(XamlReader xamlReader, IXamlObjectWriterFactory writerFactory, Boolean skipJournaledProperties, Object rootObject, XamlObjectWriterSettings settings, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.LoadBaml(XamlReader xamlReader, Boolean skipJournaledProperties, Object rootObject, XamlAccessLevel accessLevel, Uri baseUri)
+   at System.Windows.Markup.XamlReader.LoadBaml(Stream stream, ParserContext parserContext, Object parent, Boolean closeStream)
+   at System.Windows.Application.LoadBamlStreamWithSyncInfo(Stream stream, ParserContext pc)
+   at System.Windows.Application.DoStartup()
+   at System.Windows.Application.<.ctor>b__1_0(Object unused)
+   at System.Windows.Threading.ExceptionWrapper.InternalRealCall(Delegate callback, Object args, Int32 numArgs)
+   at System.Windows.Threading.ExceptionWrapper.TryCatchWhen(Object source, Delegate callback, Object args, Int32 numArgs, Delegate catchHandler)
+   at System.Windows.Threading.DispatcherOperation.InvokeImpl()
+   at MS.Internal.CulturePreservingExecutionContext.CallbackWrapper(Object obj)
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+   at MS.Internal.CulturePreservingExecutionContext.Run(CulturePreservingExecutionContext executionContext, ContextCallback callback, Object state)
+   at System.Windows.Threading.DispatcherOperation.Invoke()
+   at System.Windows.Threading.Dispatcher.ProcessQueue()
+   at System.Windows.Threading.Dispatcher.WndProcHook(IntPtr hwnd, Int32 msg, IntPtr wParam, IntPtr lParam, Boolean& handled)
+   at MS.Win32.HwndWrapper.WndProc(IntPtr hwnd, Int32 msg, IntPtr wParam, IntPtr lParam, Boolean& handled)
+   at MS.Win32.HwndSubclass.DispatcherCallbackOperation(Object o)
+   at System.Windows.Threading.ExceptionWrapper.InternalRealCall(Delegate callback, Object args, Int32 numArgs)
+   at System.Windows.Threading.ExceptionWrapper.TryCatchWhen(Object source, Delegate callback, Object args, Int32 numArgs, Delegate catchHandler)
+   at System.Windows.Threading.Dispatcher.LegacyInvokeImpl(DispatcherPriority priority, TimeSpan timeout, Delegate method, Object args, Int32 numArgs)
+   at MS.Win32.HwndSubclass.SubclassWndProc(IntPtr hwnd, Int32 msg, IntPtr wParam, IntPtr lParam)
+   at MS.Win32.UnsafeNativeMethods.DispatchMessage(MSG& msg)
+   at System.Windows.Threading.Dispatcher.PushFrameImpl(DispatcherFrame frame)
+   at System.Windows.Application.RunDispatcher(Object ignore)
+   at System.Windows.Application.RunInternal(Window window)
+   at IRCTCTatkalBot.App.Main()
+[22:37:32.472] [Info   ] === Application Starting ===
+[22:37:32.481] [Info   ] Loading AppSettings...
+[22:37:32.511] [Info   ] AppSettings loaded successfully
+[22:37:32.511] [Info   ] === Application Started Successfully ===
+[22:37:32.866] [Error  ] ClassCombo_SelectionChanged NullReferenceException: Object reference not set to an instance of an object.
+   at IRCTCTatkalBot.MainWindow.ClassCombo_SelectionChanged(Object sender, SelectionChangedEventArgs e) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml.cs:line 101
+[22:37:32.888] [Info   ] MainWindow: Initialized XAML
+[22:37:32.890] [Info   ] MainWindow: ViewModel created
+[22:37:32.890] [Info   ] MainWindow: DataContext set
+[22:40:19.382] [Info   ] === Application Starting ===
+[22:40:19.390] [Info   ] Loading AppSettings...
+[22:40:19.420] [Info   ] AppSettings loaded successfully
+[22:40:19.420] [Info   ] === Application Started Successfully ===
+[22:40:20.088] [Error  ] ClassCombo_SelectionChanged NullReferenceException: Object reference not set to an instance of an object.
+   at IRCTCTatkalBot.MainWindow.ClassCombo_SelectionChanged(Object sender, SelectionChangedEventArgs e) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml.cs:line 101
+[22:40:20.111] [Info   ] MainWindow: Initialized XAML
+[22:40:20.112] [Info   ] MainWindow: ViewModel created
+[22:40:20.112] [Info   ] MainWindow: DataContext set
+[22:43:36.905] [Info   ] === Application Starting ===
+[22:43:36.915] [Info   ] Loading AppSettings...
+[22:43:36.950] [Info   ] AppSettings loaded successfully
+[22:43:36.950] [Info   ] === Application Started Successfully ===
+[22:43:37.317] [Error  ] ClassCombo_SelectionChanged NullReferenceException: Object reference not set to an instance of an object.
+   at IRCTCTatkalBot.MainWindow.ClassCombo_SelectionChanged(Object sender, SelectionChangedEventArgs e) in F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot\MainWindow.xaml.cs:line 101
+[22:43:37.339] [Info   ] MainWindow: Initialized XAML
+[22:43:37.340] [Info   ] MainWindow: ViewModel created
+[22:43:37.340] [Info   ] MainWindow: DataContext set

@@ -1,0 +1,61 @@
+using System;
+using System.Windows;
+using IRCTCTatkalBot.Helpers;
+
+namespace IRCTCTatkalBot
+{
+    public partial class App : Application
+    {
+        protected override void OnStartup(StartupEventArgs e)
+        {
+            base.OnStartup(e);
+
+            try
+            {
+                Logger.Info("=== Application Starting ===");
+            }
+            catch { }
+
+            // Add exception handlers
+            AppDomain.CurrentDomain.UnhandledException += (s, ex) =>
+            {
+                try
+                {
+                    Logger.Error((Exception)ex.ExceptionObject, "AppDomain.UnhandledException");
+                    MessageBox.Show($"Fatal Error:\n{ex.ExceptionObject}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                catch
+                {
+                    MessageBox.Show($"Fatal Error:\n{ex.ExceptionObject}", "Error");
+                }
+            };
+
+            DispatcherUnhandledException += (s, ex) =>
+            {
+                try
+                {
+                    Logger.Error(ex.Exception, "Dispatcher.UnhandledException");
+                }
+                catch { }
+
+                MessageBox.Show($"UI Error:\n{ex.Exception.Message}\n\n{ex.Exception.StackTrace}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                ex.Handled = false;
+            };
+
+            try
+            {
+                Logger.Info("Loading AppSettings...");
+                _ = AppSettings.Instance;
+                Logger.Info("AppSettings loaded successfully");
+                Logger.Info("=== Application Started Successfully ===");
+            }
+            catch (Exception ex)
+            {
+                try { Logger.Error(ex, "App.OnStartup"); } catch { }
+                MessageBox.Show($"Startup Error:\n{ex.Message}\n\n{ex.StackTrace}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Shutdown(1);
+            }
+        }
+    }
+}
+
