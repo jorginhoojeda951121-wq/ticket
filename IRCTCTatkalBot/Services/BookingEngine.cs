@@ -25,10 +25,10 @@ namespace IRCTCTatkalBot.Services
         //  Timeouts – adjust if your connection is slow
         // ──────────────────────────────────────────────────────────────
         private const int SHORT_WAIT  = 10;   // seconds – fast DOM elements
-        private const int MEDIUM_WAIT = 15;   // seconds – page navigation / search button
+        private const int MEDIUM_WAIT = 18;   // seconds – search button / autocomplete
         private const int LONG_WAIT   = 35;   // seconds – train list load
-        /// <summary>Train-search Angular shell + station autocomplete; explicit wait only (implicit wait is 0).</summary>
-        private const int TRAIN_SEARCH_INPUT_WAIT = 22;
+        /// <summary>Train-search shell after login/redirect can be slow; station + autocomplete.</summary>
+        private const int TRAIN_SEARCH_INPUT_WAIT = 35;
         /// <summary>IRCTC often opens Book Now slowly after class cell click; longer than SHORT_WAIT.</summary>
         private const int BOOK_NOW_WAIT = 22;
 
@@ -52,18 +52,19 @@ namespace IRCTCTatkalBot.Services
             {
                 // ── BUG-FIX 3: Avoid full re-login on retry ──────────────
                 UpdateStatus(BookingStatus.LoggingIn);
-                bool alreadyIn = _session.IsLoggedIn() && IrctcSessionProbe.SessionLikelyAlive(Driver);
-                if (alreadyIn)
+                bool reusedSession = _session.IsLoggedIn() && IrctcSessionProbe.SessionLikelyAlive(Driver);
+                if (reusedSession)
                 {
                     Logger.Info($"BookingEngine: Session still active – skipping re-login.");
                     Logger.Info("BookingEngine: Note — IRCTC may still show LOGIN / REGISTER in the header while your session is valid; automation relies on cookies and booking pages, not that chip.");
                     Driver.Navigate().GoToUrl("https://www.irctc.co.in/nget/train-search");
-                    await Task.Delay(900, ct);
+                    await Task.Delay(1600, ct);
                 }
                 else
                 {
                     if (!await _session.LoginAsync(ct))
                         return Fail("Login failed");
+                    await Task.Delay(800, ct);
                 }
 
                 UpdateStatus(BookingStatus.Searching);
@@ -103,6 +104,95 @@ namespace IRCTCTatkalBot.Services
             return _result;
         }
 
+        /// <summary>
+        /// After login IRCTC may redirect away from train-search; station inputs are absent until the shell loads.
+        /// </summary>
+        private async Task EnsureTrainSearchShellAsync(CancellationToken ct)
+        {
+            const string trainSearchUrl = "https://www.irctc.co.in/nget/train-search";
+            for (int round = 0; round < 3; round++)
+            {
+                string u = Driver.Url ?? "";
+                if (!u.Contains("train-search", StringComparison.OrdinalIgnoreCase))
+                {
+                    Logger.Info($"BookingEngine: Not on train-search (url='{u}') — opening train search.");
+                    Driver.Navigate().GoToUrl(trainSearchUrl);
+                    await Task.Delay(1400 + round * 350, ct);
+                }
+
+                try
+                {
+                    Wait(TRAIN_SEARCH_INPUT_WAIT).Until(d =>
+                        FindFirstVisibleStationInput(d, forOrigin: true) != null
+                        || TryFind(d, "app-train-search") != null);
+                    Logger.Info($"BookingEngine: Train-search ready. url={Driver.Url}");
+                    return;
+                }
+                catch (WebDriverTimeoutException)
+                {
+                    Logger.Warning($"BookingEngine: Waiting for train-search shell timed out (attempt {round + 1}).");
+                    Driver.Navigate().GoToUrl(trainSearchUrl);
+                    await Task.Delay(1800, ct);
+                }
+            }
+
+            Logger.Warning("BookingEngine: Train-search shell not confirmed — proceeding with search steps.");
+        }
+
+        /// <summary>
+        /// Picks autocomplete if present; does not throw (IRCTC sometimes binds station without dropdown).
+        /// </summary>
+        private async Task ClickAutocompleteMatchingAsync(string userStationText, CancellationToken ct)
+        {
+            string needle = ExtractStationMatchKey(userStationText);
+            var deadline = DateTime.UtcNow.AddSeconds(18);
+            while (DateTime.UtcNow < deadline && !ct.IsCancellationRequested)
+            {
+                try
+                {
+                    var list = Driver.FindElements(By.CssSelector(
+                        ".ui-autocomplete-list-item, .p-autocomplete-item, .ng-option, " +
+                        "mat-option, .mat-mdc-option, .mdc-list-item, li.p-dropdown-item"));
+                    IWebElement? firstVisible = null;
+                    foreach (var item in list)
+                    {
+                        try
+                        {
+                            if (!item.Displayed)
+                                continue;
+                            firstVisible ??= item;
+                            string t = item.Text ?? "";
+                            if (needle.Length == 0 || t.Contains(needle, StringComparison.OrdinalIgnoreCase))
+                            {
+                                item.Click();
+                                await Task.Delay(350, ct);
+                                return;
+                            }
+                        }
+                        catch
+                        {
+                            /* stale */
+                        }
+                    }
+
+                    if (needle.Length == 0 && firstVisible != null)
+                    {
+                        firstVisible.Click();
+                        await Task.Delay(350, ct);
+                        return;
+                    }
+                }
+                catch
+                {
+                    /* ignore */
+                }
+
+                await Task.Delay(220, ct);
+            }
+
+            Logger.Warning($"BookingEngine: No autocomplete match for '{userStationText}' within wait — continuing.");
+        }
+
         // ────────────────────────────────────────────────────────────────
         //  SEARCH
         // ────────────────────────────────────────────────────────────────
@@ -113,22 +203,32 @@ namespace IRCTCTatkalBot.Services
                 Logger.Info($"BookingEngine: Searching {_config.FromStation} → {_config.ToStation}");
 
                 await DismissBlockingOverlaysAsync(ct);
+                await EnsureTrainSearchShellAsync(ct);
+                try
+                {
+                    Driver.FindElement(By.TagName("body")).SendKeys(Keys.Escape);
+                    await Task.Delay(350, ct);
+                }
+                catch { /* ignore */ }
+                await DismissBlockingOverlaysAsync(ct);
 
                 // ── From station ──────────────────────────────────────────
                 var fromInput = Wait(TRAIN_SEARCH_INPUT_WAIT).Until(d =>
                     FindFirstVisibleStationInput(d, forOrigin: true));
                 ClearAndType(fromInput!, _config.FromStation);
                 await Task.Delay(550, ct);
-                ClickAutocompleteMatching(_config.FromStation);
-                await Task.Delay(280, ct);
+                await ClickAutocompleteMatchingAsync(_config.FromStation, ct);
+                try { fromInput!.SendKeys(Keys.Tab); } catch { /* stale */ }
+                await Task.Delay(350, ct);
 
                 // ── To station ────────────────────────────────────────────
                 var toInput = Wait(TRAIN_SEARCH_INPUT_WAIT).Until(d =>
                     FindFirstVisibleStationInput(d, forOrigin: false));
                 ClearAndType(toInput!, _config.ToStation);
                 await Task.Delay(550, ct);
-                ClickAutocompleteMatching(_config.ToStation);
-                await Task.Delay(280, ct);
+                await ClickAutocompleteMatchingAsync(_config.ToStation, ct);
+                try { toInput!.SendKeys(Keys.Tab); } catch { /* stale */ }
+                await Task.Delay(350, ct);
 
                 // ── Journey date – use JS so calendar binding isn't needed ─
                 // ── BUG-FIX: "Journey date may not have bound to calendar" ─
@@ -245,9 +345,32 @@ namespace IRCTCTatkalBot.Services
                     });
                 });
                 _session.SafeClick(searchBtn!);
+                await Task.Delay(400, ct);
 
-                // ── Wait for train-list URL ────────────────────────────────
-                Wait(MEDIUM_WAIT).Until(d => d.Url.Contains("train-list"));
+                // IRCTC may navigate to train-list slowly, use a hash route, or render the list
+                // before the URL substring updates — do not rely on URL alone.
+                Wait(LONG_WAIT).Until(d =>
+                {
+                    string url = d.Url ?? "";
+                    if (url.Contains("train-list", StringComparison.OrdinalIgnoreCase))
+                        return true;
+                    try
+                    {
+                        foreach (var r in d.FindElements(By.CssSelector(
+                                     "app-train-avl-enq, app-train-list, div.train-avl-holder, div.train-list")))
+                        {
+                            try
+                            {
+                                if (r.Displayed)
+                                    return true;
+                            }
+                            catch { /* stale */ }
+                        }
+                    }
+                    catch { /* ignore */ }
+
+                    return false;
+                });
                 await WaitForTrainListRowsAsync(ct);
                 Logger.Info($"BookingEngine: Search submitted successfully. url={Driver.Url}");
                 return true;
@@ -979,8 +1102,10 @@ namespace IRCTCTatkalBot.Services
                 {
                     try
                     {
-                        _session.SafeClick(Wait(SHORT_WAIT).Until(d =>
-                            TryFind(d, "[id*='UPI'],[aria-label*='UPI'],label[for*='upi']")));
+                        var upiEl = Wait(SHORT_WAIT).Until(d =>
+                            TryFind(d, "[id*='UPI'],[aria-label*='UPI'],label[for*='upi']"));
+                        if (upiEl != null)
+                            _session.SafeClick(upiEl);
                         await Task.Delay(800, ct);
                         if (!string.IsNullOrEmpty(_config.UpiId))
                             ClearAndType(
@@ -1068,77 +1193,6 @@ namespace IRCTCTatkalBot.Services
             return s;
         }
 
-        private void ClickAutocompleteMatching(string userStationText)
-        {
-            string needle = ExtractStationMatchKey(userStationText);
-            if (needle.Length == 0)
-            {
-                ClickFirstAutocompleteFallback();
-                return;
-            }
-
-            try
-            {
-                Wait(SHORT_WAIT).Until(d =>
-                {
-                    var list = d.FindElements(By.CssSelector(
-                        ".ui-autocomplete-list-item, .p-autocomplete-item, .ng-option, " +
-                        "mat-option, .mat-mdc-option, .mdc-list-item"));
-                    IWebElement? firstVisible = null;
-                    foreach (var item in list)
-                    {
-                        try
-                        {
-                            if (!item.Displayed)
-                                continue;
-                            firstVisible ??= item;
-                            string t = item.Text ?? "";
-                            if (t.Contains(needle, StringComparison.OrdinalIgnoreCase))
-                                return item;
-                        }
-                        catch
-                        {
-                            /* stale */
-                        }
-                    }
-
-                    return firstVisible;
-                })?.Click();
-            }
-            catch
-            {
-                ClickFirstAutocompleteFallback();
-            }
-        }
-
-        private void ClickFirstAutocompleteFallback()
-        {
-            try
-            {
-                Wait(SHORT_WAIT).Until(d =>
-                {
-                    var list = d.FindElements(By.CssSelector(
-                        ".ui-autocomplete-list-item, .p-autocomplete-item, .ng-option, " +
-                        "mat-option, .mat-mdc-option, .mdc-list-item"));
-                    foreach (var item in list)
-                    {
-                        try
-                        {
-                            if (item.Displayed)
-                                return item;
-                        }
-                        catch
-                        {
-                            /* stale */
-                        }
-                    }
-
-                    return null;
-                })?.Click();
-            }
-            catch { }
-        }
-
         private WebDriverWait Wait(int seconds) =>
             new(Driver, TimeSpan.FromSeconds(seconds));
 
@@ -1151,6 +1205,9 @@ namespace IRCTCTatkalBot.Services
             string[] selectors = forOrigin
                 ? new[]
                 {
+                    "app-train-search ng-select[formcontrolname='origin'] input",
+                    "app-train-search ng-select[formcontrolname='origin'] .ng-input input",
+                    "app-train-search p-autocomplete[formcontrolname='origin'] input",
                     "ng-select[formcontrolname='origin'] input",
                     "ng-select[formcontrolname='origin'] .ng-input input",
                     "p-autocomplete[formcontrolname='origin'] input",
@@ -1167,6 +1224,9 @@ namespace IRCTCTatkalBot.Services
                 }
                 : new[]
                 {
+                    "app-train-search ng-select[formcontrolname='destination'] input",
+                    "app-train-search ng-select[formcontrolname='destination'] .ng-input input",
+                    "app-train-search p-autocomplete[formcontrolname='destination'] input",
                     "ng-select[formcontrolname='destination'] input",
                     "ng-select[formcontrolname='destination'] .ng-input input",
                     "p-autocomplete[formcontrolname='destination'] input",
