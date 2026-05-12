@@ -109,3 +109,4 @@ F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot.Tests\bin\x64\Debug\net8.0-windows\Syst
 F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot.Tests\bin\x64\Debug\net8.0-windows\System.Text.Encodings.Web.dll
 F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot.Tests\bin\x64\Debug\net8.0-windows\System.Text.Json.dll
 F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot.Tests\bin\x64\Debug\net8.0-windows\runtimes\browser\lib\net8.0\System.Text.Encodings.Web.dll
+F:\reverse\IRCTCTatkalBot\IRCTCTatkalBot.Tests\obj\x64\Debug\net8.0-windows\IRCTCTatkalBot.Tests.sourcelink.json

@@ -1,0 +1,8 @@
+[12:27:31.144] [Info   ] === Application Starting ===
+[12:27:31.152] [Info   ] Loading AppSettings...
+[12:27:31.900] [Info   ] AppSettings loaded successfully
+[12:27:31.900] [Info   ] === Application Started Successfully ===
+[12:27:31.937] [Info   ] AccountManager: Loaded 1 account(s)
+[12:27:31.946] [Info   ] MainWindow: ViewModel created
+[12:27:32.122] [Info   ] MainWindow: Initialized XAML
+[12:27:32.122] [Info   ] MainWindow: DataContext set

@@ -25,6 +25,10 @@
     {
       "AbsoluteMoniker": "D:0:0:{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}|IRCTCTatkalBot\\IRCTCTatkalBot.csproj|f:\\reverse\\irctctatkalbot\\irctctatkalbot\\app.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}|IRCTCTatkalBot\\IRCTCTatkalBot.csproj|solutionrelative:irctctatkalbot\\app.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}|IRCTCTatkalBot\\IRCTCTatkalBot.csproj|f:\\reverse\\irctctatkalbot\\irctctatkalbot\\services\\bookingorchestrator.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}|IRCTCTatkalBot\\IRCTCTatkalBot.csproj|solutionrelative:irctctatkalbot\\services\\bookingorchestrator.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -34,8 +38,21 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 1,
           "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "BookingOrchestrator.cs",
+              "DocumentMoniker": "F:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot\\Services\\BookingOrchestrator.cs",
+              "RelativeDocumentMoniker": "IRCTCTatkalBot\\Services\\BookingOrchestrator.cs",
+              "ToolTip": "F:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot\\Services\\BookingOrchestrator.cs",
+              "RelativeToolTip": "IRCTCTatkalBot\\Services\\BookingOrchestrator.cs",
+              "ViewState": "AgIAAIgAAAAAAAAAAIBJwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-11T03:25:26.926Z",
+              "EditorCaption": ""
+            },
             {
               "$type": "Document",
               "DocumentIndex": 0,
@@ -69,9 +86,10 @@
               "RelativeDocumentMoniker": "IRCTCTatkalBot\\Helpers\\SelectHelper.cs",
               "ToolTip": "F:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot\\Helpers\\SelectHelper.cs",
               "RelativeToolTip": "IRCTCTatkalBot\\Helpers\\SelectHelper.cs",
-              "ViewState": "AgIAAEMAAAAAAAAAAAAcwE8AAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAACsAAAAAAAAAAABBwFAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-05-03T12:34:47.479Z"
+              "WhenOpened": "2026-05-03T12:34:47.479Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
@@ -81,9 +99,10 @@
               "RelativeDocumentMoniker": "IRCTCTatkalBot\\Services\\BookingEngine.cs",
               "ToolTip": "F:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot\\Services\\BookingEngine.cs",
               "RelativeToolTip": "IRCTCTatkalBot\\Services\\BookingEngine.cs",
-              "ViewState": "AgIAAPYCAAAAAAAAAIBJwAAAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAI8BAAAAAAAAAABBwAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-05-03T12:33:35.427Z"
+              "WhenOpened": "2026-05-03T12:33:35.427Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",

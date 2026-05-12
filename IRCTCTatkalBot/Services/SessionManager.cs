@@ -213,8 +213,22 @@ namespace IRCTCTatkalBot.Services
                 // Submit inside modal (may be more than one submit on page — prefer login dialog)
                 // Click submit button that belongs to the currently opened login modal/form.
                 // IRCTC pages often contain multiple "submit" buttons outside the modal.
-                var loginBtn = FindLoginSubmitButtonWithRetry();
-                SafeClick(loginBtn);
+                // Angular often omits a native <form>; rely on dialog/modal ancestors + Enter fallback.
+                try
+                {
+                    var loginBtn = FindLoginSubmitButtonWithRetry();
+                    SafeClick(loginBtn);
+                }
+                catch (WebDriverException ex) when (
+                    ex is WebDriverTimeoutException ||
+                    ex.Message.Contains("submit", StringComparison.OrdinalIgnoreCase) ||
+                    ex.Message.Contains("login form", StringComparison.OrdinalIgnoreCase))
+                {
+                    Logger.Warning("SessionManager: Login submit button not resolved — trying Enter on password field.");
+                    var pwd = FindFirstVisible(_driver,
+                        By.CssSelector("input[formcontrolname='password'], input[formControlName='password']"));
+                    pwd?.SendKeys(Keys.Enter);
+                }
 
                 // Post-login: IRCTC frequently redirects or re-renders the header.
                 // Use the same signals the user sees ("Welcome …", "MY ACCOUNT", Logout).
@@ -464,31 +478,88 @@ namespace IRCTCTatkalBot.Services
 
         private IWebElement FindLoginSubmitButtonWithRetry()
         {
-            for (int attempt = 0; attempt < 4; attempt++)
+            // Modal fields can appear slowly; password may briefly detach during captcha UX.
+            var waitSubmit = new WebDriverWait(_driver, TimeSpan.FromSeconds(22));
+            try
             {
-                try
+                return waitSubmit.Until(driver =>
                 {
-                    IWebElement? root = FindFirstVisible(_driver!,
-                                      By.CssSelector("input[formcontrolname='password'], input[formControlName='password']"))
-                                  ?? FindFirstVisible(_driver!,
-                                      By.CssSelector("input[formcontrolname='userid'], input[formControlName='userid']"));
-                    if (root == null)
-                        throw new WebDriverException("Login form not found for submit button.");
+                    try
+                    {
+                        IWebElement? root = FindFirstVisible(driver,
+                            By.CssSelector("input[formcontrolname='password'], input[formControlName='password']"))
+                            ?? FindFirstVisible(driver,
+                                By.CssSelector("input[formcontrolname='userid'], input[formControlName='userid']"));
+                        if (root == null)
+                            return null;
 
-                    return FindLoginSubmitButton(root);
-                }
-                catch (StaleElementReferenceException)
-                {
-                    Thread.Sleep(300);
-                }
+                        return FindLoginSubmitButton(root);
+                    }
+                    catch (StaleElementReferenceException)
+                    {
+                        return null;
+                    }
+                    catch (WebDriverException)
+                    {
+                        return null;
+                    }
+                })!;
             }
+            catch (WebDriverTimeoutException)
+            {
+                IWebElement? root = FindFirstVisible(_driver!,
+                    By.CssSelector("input[formcontrolname='password'], input[formControlName='password']"))
+                    ?? FindFirstVisible(_driver!,
+                        By.CssSelector("input[formcontrolname='userid'], input[formControlName='userid']"));
+                if (root == null)
+                    throw new WebDriverException("Login form not found for submit button.");
 
-            throw new WebDriverException("Could not find clickable login submit button (stale element retries exhausted).");
+                return FindLoginSubmitButton(root);
+            }
         }
 
         private IWebElement FindLoginSubmitButton(IWebElement root)
         {
-            // 1) Prefer buttons inside the nearest form of the login modal.
+            // 1) Prefer buttons inside a form, Material dialog, or generic modal (Angular often has no <form>).
+            string[] containerXPaths =
+            {
+                "ancestor::form[1]",
+                "ancestor::*[@role='dialog'][1]",
+                "ancestor::mat-dialog-container[1]",
+                "ancestor::div[contains(concat(' ', normalize-space(@class), ' '), ' modal ')][1]",
+                "ancestor::div[contains(translate(@class,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'login')][1]",
+                "ancestor::div[contains(translate(@class,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'mdc-dialog')][1]",
+            };
+
+            string[] buttonXPaths =
+            {
+                "//button[@type='submit']",
+                "//button[contains(translate(normalize-space(.),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'sign in')]",
+                "//button[contains(translate(normalize-space(.),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'login')]",
+                "//button[contains(translate(normalize-space(.),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'log in')]",
+                "//input[@type='submit' or contains(@value,'LOGIN') or contains(@value,'Sign') or contains(@value,'SIGN')]",
+            };
+
+            foreach (string cont in containerXPaths)
+            {
+                foreach (string btn in buttonXPaths)
+                {
+                    foreach (var el in root.FindElements(By.XPath(cont + btn)))
+                    {
+                        try
+                        {
+                            if (el.Displayed && el.Enabled)
+                                return el;
+                        }
+                        catch
+                        {
+                            /* stale */
+                        }
+                    }
+                }
+            }
+
+            // 2) Legacy: nearest form only (narrower XPaths used before dialog-aware paths).
             foreach (var by in new[]
                      {
                          By.XPath("ancestor::form[1]//button[@type='submit']"),
@@ -510,7 +581,7 @@ namespace IRCTCTatkalBot.Services
                 }
             }
 
-            // 2) Fallback: scan entire DOM (less reliable, but better than failing hard).
+            // 3) Fallback: scan entire DOM (less reliable, but better than failing hard).
             foreach (var el in _driver!.FindElements(By.CssSelector("button[type='submit'], input[type='submit']")))
             {
                 try

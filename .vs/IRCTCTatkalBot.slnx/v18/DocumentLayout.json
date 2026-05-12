@@ -120,7 +120,7 @@
               "RelativeDocumentMoniker": "IRCTCTatkalBot\\Views\\AddAccountDialog.xaml",
               "ToolTip": "F:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot\\Views\\AddAccountDialog.xaml",
               "RelativeToolTip": "IRCTCTatkalBot\\Views\\AddAccountDialog.xaml",
-              "ViewState": "AgIAAA8AAAAAAAAAAAAAACAAAABcAAAAAAAAAA==",
+              "ViewState": "AgIAABIAAAAAAAAAAAAAABsAAABPAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
               "WhenOpened": "2026-05-06T10:40:55.858Z",
               "EditorCaption": ""
@@ -133,9 +133,10 @@
               "RelativeDocumentMoniker": "IRCTCTatkalBot\\Services\\BookingEngine.cs",
               "ToolTip": "F:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot\\Services\\BookingEngine.cs",
               "RelativeToolTip": "IRCTCTatkalBot\\Services\\BookingEngine.cs",
-              "ViewState": "AgIAAM4AAAAAAAAAAIBJwAAAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAGkAAAAAAAAAAIBZwAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-05-08T13:11:02.498Z"
+              "WhenOpened": "2026-05-08T13:11:02.498Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",

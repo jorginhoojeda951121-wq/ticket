@@ -1,0 +1,596 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using OpenQA.Selenium;
+using OpenQA.Selenium.Interactions;
+using OpenQA.Selenium.Support.UI;
+using IRCTCTatkalBot.Helpers;
+using IRCTCTatkalBot.Models;
+
+namespace IRCTCTatkalBot.Services
+{
+    public class BookingEngine
+    {
+        private readonly SessionManager _session;
+        private readonly BookingConfig _config;
+        private readonly BookingResult _result;
+        private IWebDriver Driver => _session.Driver;
+        private IJavaScriptExecutor JS => (IJavaScriptExecutor)Driver;
+
+        // ──────────────────────────────────────────────────────────────
+        //  Timeouts – adjust if your connection is slow
+        // ──────────────────────────────────────────────────────────────
+        private const int SHORT_WAIT  = 10;   // seconds – fast DOM elements
+        private const int MEDIUM_WAIT = 20;   // seconds – page navigation
+        private const int LONG_WAIT   = 35;   // seconds – train list load
+
+        public event Action<BookingResult>? OnStatusChanged;
+
+        public BookingEngine(SessionManager session, BookingConfig config)
+        {
+            _session = session;
+            _config  = config;
+            _result  = new BookingResult { AccountId = _config.AccountId };
+        }
+
+        // ────────────────────────────────────────────────────────────────
+        //  ENTRY POINT
+        // ────────────────────────────────────────────────────────────────
+        public async Task<BookingResult> RunAsync(CancellationToken ct = default)
+        {
+            try
+            {
+                // ── BUG-FIX 3: Avoid full re-login on retry ──────────────
+                UpdateStatus(BookingStatus.LoggingIn);
+                bool alreadyIn = _session.IsLoggedIn() && IsSessionStillAlive();
+                if (alreadyIn)
+                {
+                    Logger.Info($"BookingEngine: Session still active for {_session.AccountUsername} – skipping re-login.");
+                    Driver.Navigate().GoToUrl("https://www.irctc.co.in/nget/train-search");
+                    await Task.Delay(1500, ct);
+                }
+                else
+                {
+                    if (!await _session.LoginAsync(ct))
+                        return Fail("Login failed");
+                }
+
+                UpdateStatus(BookingStatus.Searching);
+                if (!await SearchTrainAsync(ct))
+                    return Fail("Search failed");
+
+                UpdateStatus(BookingStatus.SelectingTrain);
+                if (!await SelectTrainAndClassAsync(ct))
+                    return Fail($"Could not select train/class: Timed out after {LONG_WAIT} seconds | url={Driver.Url} title={Driver.Title}");
+
+                UpdateStatus(BookingStatus.FillingPassengers);
+                if (!await FillPassengersAsync(ct))
+                    return Fail("Passenger fill failed");
+
+                UpdateStatus(BookingStatus.ProcessingPayment);
+                if (!await ProceedToPaymentAsync(ct))
+                    return Fail("Payment failed");
+
+                _result.Status      = BookingStatus.Completed;
+                _result.CompletedAt = DateTime.Now;
+                Logger.Info($"BookingEngine: Completed in {_result.ElapsedSeconds:F1}s");
+            }
+            catch (OperationCanceledException)
+            {
+                _result.Status       = BookingStatus.Cancelled;
+                _result.ErrorMessage = "Cancelled.";
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "BookingEngine.RunAsync");
+                _result.ScreenshotPath = _session.TakeScreenshot("error");
+                return Fail(ex.Message);
+            }
+            finally { OnStatusChanged?.Invoke(_result); }
+            return _result;
+        }
+
+        // ────────────────────────────────────────────────────────────────
+        //  SEARCH
+        // ────────────────────────────────────────────────────────────────
+        private async Task<bool> SearchTrainAsync(CancellationToken ct)
+        {
+            try
+            {
+                Logger.Info($"BookingEngine: Searching {_config.FromStation} → {_config.ToStation}");
+
+                // ── From station ──────────────────────────────────────────
+                var fromInput = Wait(SHORT_WAIT).Until(d =>
+                {
+                    var el = TryFind(d, "input[placeholder*='From'],input[aria-label*='From Station']");
+                    return el?.Displayed == true ? el : null;
+                });
+                ClearAndType(fromInput!, _config.FromStation);
+                await Task.Delay(900, ct);
+                ClickFirstAutocomplete();
+                await Task.Delay(400, ct);
+
+                // ── To station ────────────────────────────────────────────
+                var toInput = TryFind(Driver, "input[placeholder*='To'],input[aria-label*='To Station']");
+                ClearAndType(toInput!, _config.ToStation);
+                await Task.Delay(900, ct);
+                ClickFirstAutocomplete();
+                await Task.Delay(400, ct);
+
+                // ── Journey date – use JS so calendar binding isn't needed ─
+                // ── BUG-FIX: "Journey date may not have bound to calendar" ─
+                string dateStr = _config.JourneyDate.ToString("dd/MM/yyyy");
+                var dateInput = TryFind(Driver, "p-calendar input,input[placeholder*='Date']");
+                if (dateInput != null)
+                {
+                    // Click to open calendar, then set via JS + fire Angular events
+                    _session.SafeClick(dateInput);
+                    await Task.Delay(400, ct);
+                    JS.ExecuteScript(
+                        "arguments[0].value = arguments[1]; " +
+                        "arguments[0].dispatchEvent(new Event('input', {bubbles:true})); " +
+                        "arguments[0].dispatchEvent(new Event('change', {bubbles:true}));",
+                        dateInput, dateStr);
+                    await Task.Delay(300, ct);
+                    // Press Escape to close the calendar picker if open
+                    dateInput.SendKeys(Keys.Escape);
+                    await Task.Delay(300, ct);
+                }
+                Logger.Info($"BookingEngine: Journey date set to {dateStr}");
+
+                // ── Journey class ─────────────────────────────────────────
+                bool classSet = false;
+                try
+                {
+                    // Attempt 1: ng-select or p-dropdown
+                    var classDropdown = TryFind(Driver,
+                        "p-dropdown[formcontrolname='journeyClass'], " +
+                        "ng-select[formcontrolname='journeyClass']");
+                    if (classDropdown != null)
+                    {
+                        _session.SafeClick(classDropdown);
+                        await Task.Delay(500, ct);
+                        var opt = Driver.FindElements(By.CssSelector(
+                            ".p-dropdown-item, .ng-option"))
+                            .FirstOrDefault(o =>
+                                o.Text.Contains(_config.TrainClass, StringComparison.OrdinalIgnoreCase));
+                        if (opt != null) { _session.SafeClick(opt); classSet = true; }
+                    }
+                }
+                catch { }
+                if (!classSet)
+                {
+                    try
+                    {
+                        // Attempt 2: native <select>
+                        var sel = TryFind(Driver, "select[aria-label*='Class']");
+                        if (sel != null)
+                        { new SelectElement(sel).SelectByText(_config.TrainClass); classSet = true; }
+                    }
+                    catch { }
+                }
+                if (classSet) Logger.Info($"BookingEngine: Journey class dropdown updated (match contains '{_config.TrainClass}').");
+
+                // ── Quota ─────────────────────────────────────────────────
+                bool quotaSet = false;
+                try
+                {
+                    var quotaDd = TryFind(Driver,
+                        "p-dropdown[formcontrolname='quota'], ng-select[formcontrolname='quota']");
+                    if (quotaDd != null)
+                    {
+                        _session.SafeClick(quotaDd);
+                        await Task.Delay(500, ct);
+                        var opt = Driver.FindElements(By.CssSelector(".p-dropdown-item, .ng-option"))
+                            .FirstOrDefault(o =>
+                                o.Text.Contains("TATKAL", StringComparison.OrdinalIgnoreCase));
+                        if (opt != null) { _session.SafeClick(opt); quotaSet = true; }
+                    }
+                }
+                catch { }
+                if (!quotaSet)
+                {
+                    try
+                    {
+                        var sel = TryFind(Driver, "select[aria-label*='Quota']");
+                        if (sel != null)
+                        { new SelectElement(sel).SelectByText(_config.Quota); quotaSet = true; }
+                    }
+                    catch { }
+                }
+                if (quotaSet) Logger.Info($"BookingEngine: Quota dropdown updated (match contains 'TATKAL').");
+
+                // ── Click Search ──────────────────────────────────────────
+                var searchBtn = Wait(SHORT_WAIT).Until(d =>
+                {
+                    var el = TryFind(d,
+                        "button.search_btn, button[class*='train_Search'], " +
+                        "button[title*='Search'], button[type='submit'][class*='search']");
+                    return el?.Displayed == true && el.Enabled ? el : null;
+                });
+                _session.SafeClick(searchBtn!);
+
+                // ── Wait for train-list URL ────────────────────────────────
+                Wait(MEDIUM_WAIT).Until(d => d.Url.Contains("train-list"));
+                await Task.Delay(3000, ct);   // allow Angular to render rows
+                Logger.Info($"BookingEngine: Search submitted successfully. url={Driver.Url}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "BookingEngine.SearchTrainAsync");
+                _session.TakeScreenshot("search_error");
+                return false;
+            }
+        }
+
+        // ────────────────────────────────────────────────────────────────
+        //  SELECT TRAIN & CLASS  ← primary bug fix
+        // ────────────────────────────────────────────────────────────────
+        private async Task<bool> SelectTrainAndClassAsync(CancellationToken ct)
+        {
+            try
+            {
+                // ── BUG-FIX 1: Guard against empty train number ───────────
+                string trainNo = (_config.TrainNumber ?? "").Trim();
+                Logger.Info($"BookingEngine: Looking for train {trainNo} class {_config.TrainClass}");
+
+                if (string.IsNullOrEmpty(trainNo))
+                    Logger.Warning("BookingEngine: Train number is EMPTY – will select the first available train.");
+
+                // ── BUG-FIX 2: Updated selectors for IRCTC's Angular UI ───
+                // IRCTC uses Angular components. Try multiple selectors with
+                // a generous wait so the lazy-loaded list has time to appear.
+                IReadOnlyList<IWebElement>? trainRows = null;
+                string[] rowSelectors =
+                {
+                    "app-train-avl-enq",           // Angular component (current)
+                    "div.train-avl-holder",         // fallback
+                    "div.train-list",               // older layout
+                    "div.train-brd-dtl",            // older layout
+                    ".train-info-block",            // original selector (kept as last resort)
+                };
+
+                foreach (string sel in rowSelectors)
+                {
+                    try
+                    {
+                        trainRows = Wait(LONG_WAIT).Until(d =>
+                        {
+                            var rows = d.FindElements(By.CssSelector(sel));
+                            return rows.Count > 0 ? rows : null;
+                        });
+                        if (trainRows?.Count > 0)
+                        {
+                            Logger.Info($"BookingEngine: Found {trainRows.Count} train(s) using selector '{sel}'.");
+                            break;
+                        }
+                    }
+                    catch { /* try next selector */ }
+                }
+
+                if (trainRows == null || trainRows.Count == 0)
+                {
+                    Logger.Error("BookingEngine: No trains found on results page.");
+                    _session.TakeScreenshot("select_error");
+                    return false;
+                }
+
+                // ── Find the matching train row ───────────────────────────
+                IWebElement? trainRow = null;
+                if (!string.IsNullOrEmpty(trainNo))
+                {
+                    // Try to match by train number text within the row
+                    trainRow = trainRows.FirstOrDefault(r =>
+                    {
+                        try
+                        {
+                            // Multiple inner selectors for the train number text
+                            string[] numSelectors =
+                            {
+                                ".train-number", ".trainNo", "h2", "p.train-number",
+                                "strong", "div.train-brd-dtl p", "span.trainno"
+                            };
+                            return numSelectors.Any(s =>
+                            {
+                                try { return r.FindElement(By.CssSelector(s)).Text.Contains(trainNo); }
+                                catch { return false; }
+                            });
+                        }
+                        catch { return false; }
+                    });
+
+                    if (trainRow == null)
+                        Logger.Warning($"BookingEngine: Train {trainNo} not found in list – selecting first available.");
+                }
+                trainRow ??= trainRows[0];
+
+                // ── Scroll the row into view ───────────────────────────────
+                JS.ExecuteScript("arguments[0].scrollIntoView({block:'center'});", trainRow);
+                await Task.Delay(500, ct);
+
+                // ── Find the class/availability button ────────────────────
+                string[] classSelectors =
+                {
+                    "td.pre-avl",
+                    "div.pre-avl",
+                    "td.available-status",
+                    "td[class*='AVAILABLE']",
+                    "td[class*='avail']",
+                    ".booking-button",
+                    "td button",
+                };
+
+                IWebElement? classBtn = null;
+                foreach (string sel in classSelectors)
+                {
+                    var candidates = trainRow.FindElements(By.CssSelector(sel));
+                    classBtn = candidates.FirstOrDefault(b =>
+                        b.Text.Contains(_config.TrainClass, StringComparison.OrdinalIgnoreCase));
+                    if (classBtn != null) break;
+                }
+
+                if (classBtn == null)
+                {
+                    Logger.Error($"BookingEngine: Class '{_config.TrainClass}' button not found in train row.");
+                    _session.TakeScreenshot("select_error");
+                    return false;
+                }
+
+                _session.SafeClick(classBtn);
+                await Task.Delay(1200, ct);
+
+                // ── Click the Book Now button ──────────────────────────────
+                var bookBtn = Wait(SHORT_WAIT).Until(d =>
+                {
+                    var el = TryFind(d,
+                        "button[class*='btnDefault'].booking-cls, " +
+                        "button.trainBook, " +
+                        "button[class*='book-btn'], " +
+                        "button[title*='Book Now'], " +
+                        "a[class*='book-now']");
+                    return el?.Displayed == true && el.Enabled ? el : null;
+                });
+                _session.SafeClick(bookBtn!);
+                await Task.Delay(2000, ct);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "BookingEngine.SelectTrainAndClassAsync");
+                _session.TakeScreenshot("select_error");
+                return false;
+            }
+        }
+
+        // ────────────────────────────────────────────────────────────────
+        //  FILL PASSENGERS
+        // ────────────────────────────────────────────────────────────────
+        private async Task<bool> FillPassengersAsync(CancellationToken ct)
+        {
+            try
+            {
+                Wait(MEDIUM_WAIT).Until(d =>
+                    TryFind(d, "app-passenger, .passenger-entry, app-passenger-detail") != null);
+
+                for (int i = 0; i < _config.Passengers.Count; i++)
+                {
+                    var p   = _config.Passengers[i];
+                    // Use nth-of-type / nth-child to target the right passenger block
+                    string rowSel  = $".passenger-entry:nth-child({i + 1}), " +
+                                     $"app-passenger:nth-of-type({i + 1}) .passenger-entry";
+
+                    IWebElement? pRow = null;
+                    try { pRow = Driver.FindElement(By.CssSelector(rowSel)); }
+                    catch
+                    {
+                        // fallback: get all rows and index
+                        var all = Driver.FindElements(By.CssSelector(".passenger-entry, app-passenger"));
+                        if (i < all.Count) pRow = all[i];
+                    }
+                    if (pRow == null) continue;
+
+                    TryFill(pRow, "input[placeholder*='Name']", p.Name);
+                    TryFill(pRow, "input[placeholder*='Age']",  p.Age.ToString());
+                    try
+                    {
+                        new SelectElement(pRow.FindElement(
+                            By.CssSelector("select[formcontrolname='passengerGender']")))
+                            .SelectByValue(p.Gender);
+                    }
+                    catch { }
+                    if (!string.IsNullOrEmpty(p.BerthPreference) && p.BerthPreference != "NO")
+                        try
+                        {
+                            new SelectElement(pRow.FindElement(
+                                By.CssSelector("select[formcontrolname='berthChoice']")))
+                                .SelectByText(p.BerthPreference);
+                        }
+                        catch { }
+
+                    await Task.Delay(200, ct);
+                }
+
+                await Task.Delay(400, ct);
+                try { TryFind(Driver, "button[class*='InsuranceNo'], button[id*='noInsurance']")?.Click(); }
+                catch { }
+
+                var submitBtn = Wait(SHORT_WAIT).Until(d =>
+                {
+                    var el = TryFind(d, "button[class*='btnDefault'][type='submit'], button.passenger-continue");
+                    return el?.Displayed == true && el.Enabled ? el : null;
+                });
+                _session.SafeClick(submitBtn!);
+                await Task.Delay(2000, ct);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "BookingEngine.FillPassengersAsync");
+                _session.TakeScreenshot("passenger_error");
+                return false;
+            }
+        }
+
+        // ────────────────────────────────────────────────────────────────
+        //  PAYMENT
+        // ────────────────────────────────────────────────────────────────
+        private async Task<bool> ProceedToPaymentAsync(CancellationToken ct)
+        {
+            try
+            {
+                await Task.Delay(1500, ct);
+
+                // ── Solve review-page captcha if present ──────────────────
+                try
+                {
+                    var img = TryFind(Driver, "app-captcha img, img[src*='captcha']");
+                    if (img?.Displayed == true)
+                    {
+                        string src  = img.GetAttribute("src") ?? "";
+                        string b64  = src.StartsWith("data:")
+                            ? src[(src.IndexOf(',') + 1)..]
+                            : Convert.ToBase64String(
+                                await new HttpClient().GetByteArrayAsync(src, ct));
+                        string? ans = await new CaptchaSolver(AppSettings.CaptchaApiKey)
+                            .SolveImageCaptchaAsync(b64, ct);
+                        if (!string.IsNullOrEmpty(ans))
+                            ClearAndType(
+                                TryFind(Driver, "input[formcontrolname='captcha']")!, ans);
+                    }
+                }
+                catch { }
+
+                // ── Continue to payment ───────────────────────────────────
+                var payBtn = Wait(SHORT_WAIT).Until(d =>
+                {
+                    var el = TryFind(d,
+                        "button[class*='btnDefault'][aria-label*='Pay'], " +
+                        "button[class*='proceed'], button.continue-btn");
+                    return el?.Displayed == true && el.Enabled ? el : null;
+                });
+                _session.SafeClick(payBtn!);
+                await Task.Delay(2500, ct);
+
+                // ── UPI payment ───────────────────────────────────────────
+                if (_config.PaymentMethod.Equals("UPI", StringComparison.OrdinalIgnoreCase))
+                {
+                    try
+                    {
+                        _session.SafeClick(Wait(SHORT_WAIT).Until(d =>
+                            TryFind(d, "[id*='UPI'],[aria-label*='UPI'],label[for*='upi']")));
+                        await Task.Delay(800, ct);
+                        if (!string.IsNullOrEmpty(_config.UpiId))
+                            ClearAndType(
+                                TryFind(Driver, "input[placeholder*='UPI'],input[id*='upiId']")!,
+                                _config.UpiId);
+                        _session.SafeClick(TryFind(Driver, "button[class*='payNow']")!);
+                    }
+                    catch (Exception ex) { Logger.Error(ex, "UPI payment"); }
+                }
+
+                await Task.Delay(6000, ct);
+
+                // ── Capture PNR ───────────────────────────────────────────
+                try
+                {
+                    var pnrEl = TryFind(Driver, ".pnr-no, [class*='pnrNo'], strong");
+                    string t  = pnrEl?.Text.Trim() ?? "";
+                    if (t.Length >= 10 && t.All(char.IsDigit))
+                    { _result.PnrNumber = t; Logger.Info($"BookingEngine: PNR: {t}"); }
+                }
+                catch { }
+
+                _result.ScreenshotPath = _session.TakeScreenshot("success");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "BookingEngine.ProceedToPaymentAsync");
+                _session.TakeScreenshot("payment_error");
+                return false;
+            }
+        }
+
+        // ────────────────────────────────────────────────────────────────
+        //  HELPERS
+        // ────────────────────────────────────────────────────────────────
+
+        /// <summary>Check if the IRCTC session cookie / DOM still shows logged-in state.</summary>
+        private bool IsSessionStillAlive()
+        {
+            try
+            {
+                // Quick DOM check: if logout link / MY ACCOUNT is visible the session is alive
+                string src = Driver.PageSource;
+                return src.Contains("Logout", StringComparison.OrdinalIgnoreCase)
+                    || src.Contains("MY ACCOUNT", StringComparison.OrdinalIgnoreCase);
+            }
+            catch { return false; }
+        }
+
+        private WebDriverWait Wait(int seconds) =>
+            new(Driver, TimeSpan.FromSeconds(seconds));
+
+        private static IWebElement? TryFind(ISearchContext ctx, string css)
+        {
+            try
+            {
+                var el = ctx.FindElement(By.CssSelector(css));
+                return el;
+            }
+            catch { return null; }
+        }
+
+        private void ClickFirstAutocomplete()
+        {
+            try
+            {
+                Wait(SHORT_WAIT).Until(d =>
+                {
+                    var list = d.FindElements(By.CssSelector(
+                        ".ui-autocomplete-list-item, .p-autocomplete-item, .ng-option"));
+                    return list.Count > 0 ? list[0] : null;
+                })?.Click();
+            }
+            catch { }
+        }
+
+        private static void ClearAndType(IWebElement el, string text)
+        {
+            el.Clear();
+            el.SendKeys(text);
+        }
+
+        private static void TryFill(IWebElement parent, string css, string value)
+        {
+            try
+            {
+                var el = parent.FindElement(By.CssSelector(css));
+                el.Clear();
+                el.SendKeys(value);
+            }
+            catch { }
+        }
+
+        private BookingResult Fail(string reason)
+        {
+            _result.Status       = BookingStatus.Failed;
+            _result.ErrorMessage = reason;
+            _result.CompletedAt  = DateTime.Now;
+            Logger.Error($"BookingEngine: FAILED – {reason}");
+            OnStatusChanged?.Invoke(_result);
+            return _result;
+        }
+
+        private void UpdateStatus(BookingStatus s)
+        {
+            _result.Status = s;
+            Logger.Info($"BookingEngine: → {s}");
+            OnStatusChanged?.Invoke(_result);
+        }
+    }
+}

@@ -40,7 +40,8 @@ namespace IRCTCTatkalBot.Helpers
             var options = _selectElement.FindElements(By.TagName("option"));
             foreach (var option in options)
             {
-                if (option.GetAttribute("value") == value)
+                string? optionValue = option.GetDomAttribute("value") ?? option.GetDomProperty("value");
+                if (optionValue == value)
                 {
                     option.Click();
                     return;

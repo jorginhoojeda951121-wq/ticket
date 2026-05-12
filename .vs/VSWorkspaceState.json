@@ -3,6 +3,7 @@
     "",
     "\\IRCTCTatkalBot",
     "\\IRCTCTatkalBot\\Helpers",
+    "\\IRCTCTatkalBot\\Services",
     "\\IRCTCTatkalBot\\Views"
   ],
   "SelectedNode": "\\IRCTCTatkalBot\\MainWindow.xaml.cs",

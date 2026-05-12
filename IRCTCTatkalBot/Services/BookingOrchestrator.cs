@@ -135,11 +135,8 @@ namespace IRCTCTatkalBot.Services
 
             for (int attempt = 1; attempt <= config.MaxRetries; attempt++)
             {
-                bool skipInitialLogin = preLoginSucceededScheduled && attempt == 1;
-                Logger.Info($"Orchestrator: Attempt {attempt}/{config.MaxRetries} " +
-                            $"for account {config.AccountId}" +
-                            (skipInitialLogin ? " (skip redundant login)" : ""));
-                var result = await engine.RunAsync(ct, skipInitialLogin);
+                Logger.Info($"Orchestrator: Attempt {attempt}/{config.MaxRetries} for account {config.AccountId}");
+                var result = await engine.RunAsync(ct);
 
                 if (result.Status == BookingStatus.Completed)
                 {
