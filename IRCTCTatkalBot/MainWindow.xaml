@@ -728,10 +728,10 @@
                               SelectedValuePath="Content"
                               SelectedValue="{Binding TrainClass, Mode=TwoWay}"
                               Style="{StaticResource ComboBoxStyle}">
+                        <ComboBoxItem Content="1AC"/>
+                        <ComboBoxItem Content="2AC"/>
+                        <ComboBoxItem Content="3AC" IsSelected="True"/>
                         <ComboBoxItem Content="SL"/>
-                        <ComboBoxItem Content="3A" IsSelected="True"/>
-                        <ComboBoxItem Content="2A"/>
-                        <ComboBoxItem Content="1A"/>
                         <ComboBoxItem Content="CC"/>
                         <ComboBoxItem Content="2S"/>
                     </ComboBox>

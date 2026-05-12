@@ -14,7 +14,7 @@ namespace IRCTCTatkalBot.Models
         public DateTime JourneyDate { get; set; } = DateTime.Today.AddDays(1);
         /// <summary>Required. Numeric IRCTC train number (e.g. 12951, 12215) so the correct row is chosen on the train list.</summary>
         public string TrainNumber { get; set; } = string.Empty;
-        public string TrainClass { get; set; } = "3A";            // SL / 3A / 2A / 1A / CC
+        public string TrainClass { get; set; } = "3AC";           // 1AC / 2AC / 3AC / SL / CC / 2S
         public string Quota { get; set; } = "TATKAL";             // TATKAL / PREMIUM TATKAL / GN
 
         // ── Payment ────────────────────────────────────────────────────

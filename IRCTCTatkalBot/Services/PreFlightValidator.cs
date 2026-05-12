@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using IRCTCTatkalBot.Helpers;
 using IRCTCTatkalBot.ViewModels;
 
 namespace IRCTCTatkalBot.Services
@@ -61,6 +62,8 @@ namespace IRCTCTatkalBot.Services
 
             if (string.IsNullOrWhiteSpace(vm.TrainClass))
                 errors.Add("Train class is required.");
+            else if (!IrctcTrainClass.IsAllowed(vm.TrainClass))
+                errors.Add($"Class must be one of: {string.Join(", ", IrctcTrainClass.AllowedUiValues)} (legacy 1A / 2A / 3A is still accepted).");
 
             string trainNo = (vm.TrainNumber ?? "").Trim();
             if (string.IsNullOrWhiteSpace(trainNo))

@@ -280,7 +280,9 @@ namespace IRCTCTatkalBot.Services
                 return false;
             }
 
-            return IrctcSessionProbe.AppearsLoggedIn(_driver);
+            // Fresh driver / never completed LoginAsync in this session: never skip login based on heuristics
+            // (false "logged in" on train-search broke immediate mode without pre-login).
+            return false;
         }
 
         /// <summary>

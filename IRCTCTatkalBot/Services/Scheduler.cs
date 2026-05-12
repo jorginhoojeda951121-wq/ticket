@@ -82,13 +82,7 @@ namespace IRCTCTatkalBot.Services
         /// <summary>
         /// Detects the correct Tatkal opening time based on train class.
         /// </summary>
-        public static TimeSpan GetWindowForClass(string trainClass)
-        {
-            return trainClass.ToUpperInvariant() switch
-            {
-                "SL" or "2S" => new TimeSpan(11, 0, 0),
-                _            => new TimeSpan(10, 0, 0) // AC classes
-            };
-        }
+        public static TimeSpan GetWindowForClass(string trainClass) =>
+            IrctcTrainClass.TatkalWindowOpen(trainClass);
     }
 }

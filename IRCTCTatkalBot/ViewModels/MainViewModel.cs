@@ -94,7 +94,7 @@ namespace IRCTCTatkalBot.ViewModels
             set { _trainNumber = value; OnPropertyChanged(); }
         }
 
-        private string _trainClass = "3A";
+        private string _trainClass = "3AC";
         public string TrainClass
         {
             get => _trainClass;

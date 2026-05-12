@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using OpenQA.Selenium;
@@ -162,10 +163,12 @@ namespace IRCTCTatkalBot.Services
                     {
                         _session.SafeClick(classDropdown);
                         await Task.Delay(500, ct);
+                        string[] classAliases = IrctcTrainClass.JourneySearchAliases(_config.TrainClass);
                         var opt = Driver.FindElements(By.CssSelector(
                             ".p-dropdown-item, .ng-option"))
                             .FirstOrDefault(o =>
-                                o.Text.Contains(_config.TrainClass, StringComparison.OrdinalIgnoreCase));
+                                classAliases.Any(a =>
+                                    o.Text.Contains(a, StringComparison.OrdinalIgnoreCase)));
                         if (opt != null) { _session.SafeClick(opt); classSet = true; }
                     }
                 }
@@ -177,7 +180,18 @@ namespace IRCTCTatkalBot.Services
                         // Attempt 2: native <select>
                         var sel = TryFind(Driver, "select[aria-label*='Class']");
                         if (sel != null)
-                        { new SelectHelper(sel).SelectByText(_config.TrainClass); classSet = true; }
+                        {
+                            foreach (string a in IrctcTrainClass.JourneySearchAliases(_config.TrainClass))
+                            {
+                                try
+                                {
+                                    new SelectHelper(sel).SelectByText(a);
+                                    classSet = true;
+                                    break;
+                                }
+                                catch { /* try next alias */ }
+                            }
+                        }
                     }
                     catch { }
                 }
@@ -338,21 +352,39 @@ namespace IRCTCTatkalBot.Services
 
                 Logger.Info("BookingEngine: Clicking class / availability cell.");
                 _session.SafeClick(classBtn);
-                await Task.Delay(800, ct);
+                await Task.Delay(600, ct);
 
-                var bookBtn = WaitForBookNowButton(BOOK_NOW_WAIT);
+                await TryClickAvailabilityRefreshAsync(trainRow, ct);
+                await WaitForAvailabilityLoadedAsync(trainRow, ct);
+                await DismissBlockingOverlaysAsync(ct);
+
+                // Book Now must belong to this train's card and be enabled (IRCTC shows "please select class" if not).
+                var bookBtn = WaitForEnabledBookNowNearTrain(trainNo, trainRow, BOOK_NOW_WAIT + 10)
+                              ?? WaitForBookNowButton(8);
                 if (bookBtn == null)
                 {
                     _lastSelectTrainFailureReason =
-                        $"Book Now did not appear within {BOOK_NOW_WAIT}s after choosing class '{_config.TrainClass}' for train {trainNo}. Try again or check IRCTC UI (WL trains still show Book Now when booking is allowed).";
+                        $"Book Now did not become enabled within {BOOK_NOW_WAIT + 10}s for train {trainNo} class '{_config.TrainClass}'. Select the class box on the site so availability loads (Refresh), then retry.";
                     Logger.Error($"BookingEngine: {_lastSelectTrainFailureReason}");
                     _session.TakeScreenshot("select_error");
                     return false;
                 }
 
-                Logger.Info("BookingEngine: Clicking Book Now.");
+                Logger.Info("BookingEngine: Clicking Book Now (scoped + enabled).");
                 _session.SafeClick(bookBtn);
-                await Task.Delay(2000, ct);
+                await Task.Delay(1200, ct);
+                try
+                {
+                    new WebDriverWait(Driver, TimeSpan.FromSeconds(12)).Until(d =>
+                        (d.Url ?? "").Contains("psgn", StringComparison.OrdinalIgnoreCase)
+                        || (d.Url ?? "").Contains("passenger", StringComparison.OrdinalIgnoreCase)
+                        || TryFind(d, "app-passenger, app-passenger-input, .passenger-entry") != null);
+                }
+                catch
+                {
+                    /* navigation may still be in progress */
+                }
+
                 return true;
             }
             catch (Exception ex)
@@ -444,7 +476,7 @@ namespace IRCTCTatkalBot.Services
 
         private static string[] BuildClassMatchTokens(string trainClass)
         {
-            var c = (trainClass ?? "").Trim().ToUpperInvariant();
+            string c = IrctcTrainClass.NormalizeToCanonical(trainClass ?? "").Trim();
             var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             if (c.Length == 0)
                 return Array.Empty<string>();
@@ -457,32 +489,48 @@ namespace IRCTCTatkalBot.Services
                     set.Add("1A");
                     set.Add("1AC");
                     set.Add("FIRST");
+                    set.Add("AC FIRST");
+                    set.Add("(1A)");
                     break;
                 case "2AC":
                 case "2A":
                     set.Add("2A");
                     set.Add("2AC");
+                    set.Add("AC 2 TIER");
+                    set.Add("(2A)");
                     break;
                 case "3AC":
                 case "3A":
                     set.Add("3A");
                     set.Add("3AC");
+                    set.Add("AC 3 TIER");
+                    set.Add("3 TIER");
+                    set.Add("(3A)");
                     break;
                 case "SL":
                     set.Add("SL");
                     set.Add("SLEEPER");
+                    set.Add("(SL)");
                     break;
                 case "CC":
                     set.Add("CC");
                     set.Add("CHAIR");
+                    set.Add("(CC)");
                     break;
                 case "2S":
                     set.Add("2S");
                     set.Add("SECOND");
+                    set.Add("(2S)");
                     break;
                 case "EC":
                     set.Add("EC");
                     set.Add("EXEC");
+                    break;
+                case "3E":
+                    set.Add("3E");
+                    set.Add("3 ECON");
+                    set.Add("AC 3 ECONOMY");
+                    set.Add("(3E)");
                     break;
             }
 
@@ -512,6 +560,46 @@ namespace IRCTCTatkalBot.Services
 
         private static IWebElement? FindClassAvailabilityElement(IWebElement row, string[] classTokens)
         {
+            // Prefer IRCTC class fare *cards* (e.g. "AC 3 Tier (3A)" + Refresh) — not a random td that only mentions "3A".
+            var ordered = classTokens
+                .Where(t => !string.IsNullOrWhiteSpace(t))
+                .OrderByDescending(t => t.StartsWith("(", StringComparison.Ordinal) ? 100 + t.Length : t.Length)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            foreach (string token in ordered)
+            {
+                if (token.Contains('\'', StringComparison.Ordinal))
+                    continue;
+
+                string tLower = token.ToLowerInvariant();
+                try
+                {
+                    var hits = row.FindElements(By.XPath(
+                        ".//*[self::div or self::button or self::a][" +
+                        "contains(translate(.,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'" +
+                        tLower + "')]"));
+                    foreach (var el in hits.OrderBy(e => (e.Text ?? "").Length))
+                    {
+                        try
+                        {
+                            if (!el.Displayed)
+                                continue;
+                            int len = (el.Text ?? "").Length;
+                            if (len is < 4 or > 400)
+                                continue;
+                            if (!ElementReferencesClass(el, classTokens))
+                                continue;
+                            string tag = el.TagName.ToLowerInvariant();
+                            if (tag is "div" or "button" or "a")
+                                return el;
+                        }
+                        catch { /* stale */ }
+                    }
+                }
+                catch { /* ignore */ }
+            }
+
             string[] classSelectors =
             {
                 "td.pre-avl",
@@ -560,6 +648,157 @@ namespace IRCTCTatkalBot.Services
             return null;
         }
 
+        private async Task TryClickAvailabilityRefreshAsync(IWebElement row, CancellationToken ct)
+        {
+            try
+            {
+                foreach (var xp in new[]
+                         {
+                             ".//button[contains(translate(normalize-space(.),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'refresh')]",
+                             ".//*[@role='button' and contains(translate(@aria-label,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'refresh')]",
+                             ".//button[contains(@class,'refresh')]",
+                         })
+                {
+                    foreach (var b in row.FindElements(By.XPath(xp)))
+                    {
+                        try
+                        {
+                            if (b.Displayed && b.Enabled)
+                            {
+                                Logger.Info("BookingEngine: Clicking availability Refresh in train row.");
+                                _session.SafeClick(b);
+                                await Task.Delay(900, ct);
+                                return;
+                            }
+                        }
+                        catch { /* stale */ }
+                    }
+                }
+            }
+            catch { /* ignore */ }
+        }
+
+        private static async Task WaitForAvailabilityLoadedAsync(IWebElement row, CancellationToken ct)
+        {
+            // After class + optional Refresh, IRCTC usually shows WL/AVL/RAC etc. before Book Now enables.
+            var rx = new Regex(@"\b(WL\s*\d+|RAC\s*\d+|AVL|AVAILABLE|REGRET|CAN\s*CELL|CURR\s*AVL|NOT\s+AVAILABLE)\b",
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+            for (int i = 0; i < 24 && !ct.IsCancellationRequested; i++)
+            {
+                try
+                {
+                    string t = row.Text ?? "";
+                    if (rx.IsMatch(t))
+                        return;
+                }
+                catch
+                {
+                    /* stale */
+                }
+
+                await Task.Delay(450, ct);
+            }
+        }
+
+        private IWebElement? ReFindTrainRowByNumber(string trainNo)
+        {
+            try
+            {
+                var rows = Driver.FindElements(By.CssSelector("app-train-avl-enq"));
+                return FindTrainRowForNumber(rows, trainNo);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static bool IsBookNowActuallyClickable(IWebElement el)
+        {
+            try
+            {
+                if (!el.Displayed || !el.Enabled)
+                    return false;
+                if (string.Equals(el.GetDomAttribute("aria-disabled"), "true", StringComparison.OrdinalIgnoreCase))
+                    return false;
+                string cls = el.GetDomAttribute("class") ?? "";
+                if (cls.Contains("disabled", StringComparison.OrdinalIgnoreCase) ||
+                    cls.Contains("mat-button-disabled", StringComparison.OrdinalIgnoreCase))
+                    return false;
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static IWebElement? FindFirstEnabledBookNow(ISearchContext ctx)
+        {
+            foreach (var xp in new[]
+                     {
+                         ".//button[contains(translate(normalize-space(.),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'book now')]",
+                         ".//a[contains(translate(normalize-space(.),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'book now')]",
+                     })
+            {
+                foreach (var el in ctx.FindElements(By.XPath(xp)))
+                {
+                    if (IsBookNowActuallyClickable(el))
+                        return el;
+                }
+            }
+
+            foreach (var css in new[]
+                     {
+                         "button.trainBook",
+                         "button[class*='booking-cls']",
+                         "button[class*='book-btn']",
+                         "button.book_now",
+                         "a.book_now",
+                     })
+            {
+                foreach (var el in ctx.FindElements(By.CssSelector(css)))
+                {
+                    if (IsBookNowActuallyClickable(el))
+                        return el;
+                }
+            }
+
+            return null;
+        }
+
+        private IWebElement? WaitForEnabledBookNowNearTrain(string trainNo, IWebElement initialRow, int seconds)
+        {
+            IWebElement? row = initialRow;
+            var w = new WebDriverWait(Driver, TimeSpan.FromSeconds(seconds));
+            try
+            {
+                return w.Until(_ =>
+                {
+                    try
+                    {
+                        if (row != null)
+                        {
+                            JS.ExecuteScript("arguments[0].scrollIntoView({block:'center'});", row);
+                            var b = FindFirstEnabledBookNow(row);
+                            if (b != null)
+                                return b;
+                        }
+                    }
+                    catch (StaleElementReferenceException)
+                    {
+                        row = ReFindTrainRowByNumber(trainNo);
+                    }
+
+                    return null;
+                });
+            }
+            catch (WebDriverTimeoutException)
+            {
+                return null;
+            }
+        }
+
         private IWebElement? WaitForBookNowButton(int seconds)
         {
             var w = new WebDriverWait(Driver, TimeSpan.FromSeconds(seconds));
@@ -567,7 +806,7 @@ namespace IRCTCTatkalBot.Services
             {
                 return w.Until(d =>
                 {
-                    // Global: visible enabled Book Now
+                    // Global: visible Book Now that is actually clickable (not greyed / aria-disabled).
                     foreach (var xp in new[]
                              {
                                  "//button[contains(translate(normalize-space(.),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'book now')]",
@@ -579,7 +818,7 @@ namespace IRCTCTatkalBot.Services
                         {
                             try
                             {
-                                if (el.Displayed && el.Enabled)
+                                if (el.Displayed && IsBookNowActuallyClickable(el))
                                     return el;
                             }
                             catch { /* stale */ }
@@ -601,7 +840,7 @@ namespace IRCTCTatkalBot.Services
                         {
                             try
                             {
-                                if (el.Displayed && el.Enabled)
+                                if (el.Displayed && IsBookNowActuallyClickable(el))
                                     return el;
                             }
                             catch { /* stale */ }
@@ -624,8 +863,17 @@ namespace IRCTCTatkalBot.Services
         {
             try
             {
-                Wait(MEDIUM_WAIT).Until(d =>
-                    TryFind(d, "app-passenger, .passenger-entry, app-passenger-detail") != null);
+                Logger.Info("BookingEngine: Waiting for passenger details page…");
+                Wait(28).Until(d =>
+                {
+                    string u = d.Url ?? "";
+                    if (u.Contains("psgn-details", StringComparison.OrdinalIgnoreCase) ||
+                        u.Contains("passenger-input", StringComparison.OrdinalIgnoreCase))
+                        return true;
+                    return TryFind(d,
+                        "app-passenger, app-passenger-input, .passenger-entry, app-passenger-detail, " +
+                        "input[formcontrolname*='passengerName'], input[placeholder*='Name']") != null;
+                });
 
                 for (int i = 0; i < _config.Passengers.Count; i++)
                 {
@@ -644,7 +892,7 @@ namespace IRCTCTatkalBot.Services
                     }
                     if (pRow == null) continue;
 
-                    TryFill(pRow, "input[placeholder*='Name']", p.Name);
+                    TryFill(pRow, "input[placeholder*='Name'], input[formcontrolname*='passengerName']", p.Name);
                     TryFill(pRow, "input[placeholder*='Age']",  p.Age.ToString());
                     try
                     {
@@ -977,6 +1225,8 @@ namespace IRCTCTatkalBot.Services
             string[] xpaths =
             {
                 "//button[normalize-space()='OK' or normalize-space()='Ok']",
+                "//*[contains(translate(normalize-space(.),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'please select class')]/following::button[1]",
+                "//mat-snack-bar-container//button",
                 "//button[contains(translate(normalize-space(.),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'accept')]",
                 "//button[contains(translate(normalize-space(.),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'agree')]",
                 "//button[contains(translate(normalize-space(.),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'continue')]",
