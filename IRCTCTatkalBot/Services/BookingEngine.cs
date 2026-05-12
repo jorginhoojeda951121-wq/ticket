@@ -24,10 +24,10 @@ namespace IRCTCTatkalBot.Services
         //  Timeouts – adjust if your connection is slow
         // ──────────────────────────────────────────────────────────────
         private const int SHORT_WAIT  = 10;   // seconds – fast DOM elements
-        private const int MEDIUM_WAIT = 20;   // seconds – page navigation
+        private const int MEDIUM_WAIT = 15;   // seconds – page navigation / search button
         private const int LONG_WAIT   = 35;   // seconds – train list load
-        /// <summary>Train-search Angular shell + station autocomplete can exceed SHORT_WAIT on slow links.</summary>
-        private const int TRAIN_SEARCH_INPUT_WAIT = 40;
+        /// <summary>Train-search Angular shell + station autocomplete; explicit wait only (implicit wait is 0).</summary>
+        private const int TRAIN_SEARCH_INPUT_WAIT = 22;
 
         public event Action<BookingResult>? OnStatusChanged;
 
@@ -47,12 +47,12 @@ namespace IRCTCTatkalBot.Services
             {
                 // ── BUG-FIX 3: Avoid full re-login on retry ──────────────
                 UpdateStatus(BookingStatus.LoggingIn);
-                bool alreadyIn = _session.IsLoggedIn() && IsSessionStillAlive();
+                bool alreadyIn = _session.IsLoggedIn() && IrctcSessionProbe.SessionLikelyAlive(Driver);
                 if (alreadyIn)
                 {
                     Logger.Info($"BookingEngine: Session still active – skipping re-login.");
                     Driver.Navigate().GoToUrl("https://www.irctc.co.in/nget/train-search");
-                    await Task.Delay(1500, ct);
+                    await Task.Delay(900, ct);
                 }
                 else
                 {
@@ -110,17 +110,17 @@ namespace IRCTCTatkalBot.Services
                 var fromInput = Wait(TRAIN_SEARCH_INPUT_WAIT).Until(d =>
                     FindFirstVisibleStationInput(d, forOrigin: true));
                 ClearAndType(fromInput!, _config.FromStation);
-                await Task.Delay(900, ct);
-                ClickFirstAutocomplete();
-                await Task.Delay(400, ct);
+                await Task.Delay(550, ct);
+                ClickAutocompleteMatching(_config.FromStation);
+                await Task.Delay(280, ct);
 
                 // ── To station ────────────────────────────────────────────
                 var toInput = Wait(TRAIN_SEARCH_INPUT_WAIT).Until(d =>
                     FindFirstVisibleStationInput(d, forOrigin: false));
                 ClearAndType(toInput!, _config.ToStation);
-                await Task.Delay(900, ct);
-                ClickFirstAutocomplete();
-                await Task.Delay(400, ct);
+                await Task.Delay(550, ct);
+                ClickAutocompleteMatching(_config.ToStation);
+                await Task.Delay(280, ct);
 
                 // ── Journey date – use JS so calendar binding isn't needed ─
                 // ── BUG-FIX: "Journey date may not have bound to calendar" ─
@@ -227,7 +227,7 @@ namespace IRCTCTatkalBot.Services
 
                 // ── Wait for train-list URL ────────────────────────────────
                 Wait(MEDIUM_WAIT).Until(d => d.Url.Contains("train-list"));
-                await Task.Delay(3000, ct);   // allow Angular to render rows
+                await WaitForTrainListRowsAsync(ct);
                 Logger.Info($"BookingEngine: Search submitted successfully. url={Driver.Url}");
                 return true;
             }
@@ -531,17 +531,125 @@ namespace IRCTCTatkalBot.Services
         //  HELPERS
         // ────────────────────────────────────────────────────────────────
 
-        /// <summary>Check if the IRCTC session cookie / DOM still shows logged-in state.</summary>
-        private bool IsSessionStillAlive()
+        /// <summary>Waits until result rows appear instead of a fixed multi-second sleep.</summary>
+        private async Task WaitForTrainListRowsAsync(CancellationToken ct)
+        {
+            const string rowProbe =
+                "app-train-avl-enq, app-train-list, div.train-avl-holder, div.train-list";
+            try
+            {
+                Wait(Math.Min(LONG_WAIT, 25)).Until(d =>
+                {
+                    try
+                    {
+                        var rows = d.FindElements(By.CssSelector(rowProbe));
+                        foreach (var r in rows)
+                        {
+                            try
+                            {
+                                if (r.Displayed)
+                                    return true;
+                            }
+                            catch { /* stale */ }
+                        }
+                    }
+                    catch { /* ignore */ }
+
+                    return false;
+                });
+            }
+            catch
+            {
+                await Task.Delay(700, ct);
+            }
+        }
+
+        /// <summary>Extract likely station code / suffix from UI text (e.g. "NEW DELHI - NDLS" → NDLS).</summary>
+        private static string ExtractStationMatchKey(string userStationText)
+        {
+            if (string.IsNullOrWhiteSpace(userStationText))
+                return string.Empty;
+            string s = userStationText.Trim();
+            int hi = s.LastIndexOf('-');
+            if (hi >= 0 && hi < s.Length - 1)
+            {
+                string tail = s[(hi + 1)..].Trim();
+                if (tail.Length >= 2)
+                    return tail;
+            }
+
+            return s;
+        }
+
+        private void ClickAutocompleteMatching(string userStationText)
+        {
+            string needle = ExtractStationMatchKey(userStationText);
+            if (needle.Length == 0)
+            {
+                ClickFirstAutocompleteFallback();
+                return;
+            }
+
+            try
+            {
+                Wait(SHORT_WAIT).Until(d =>
+                {
+                    var list = d.FindElements(By.CssSelector(
+                        ".ui-autocomplete-list-item, .p-autocomplete-item, .ng-option, " +
+                        "mat-option, .mat-mdc-option, .mdc-list-item"));
+                    IWebElement? firstVisible = null;
+                    foreach (var item in list)
+                    {
+                        try
+                        {
+                            if (!item.Displayed)
+                                continue;
+                            firstVisible ??= item;
+                            string t = item.Text ?? "";
+                            if (t.Contains(needle, StringComparison.OrdinalIgnoreCase))
+                                return item;
+                        }
+                        catch
+                        {
+                            /* stale */
+                        }
+                    }
+
+                    return firstVisible;
+                })?.Click();
+            }
+            catch
+            {
+                ClickFirstAutocompleteFallback();
+            }
+        }
+
+        private void ClickFirstAutocompleteFallback()
         {
             try
             {
-                // Quick DOM check: if logout link / MY ACCOUNT is visible the session is alive
-                string src = Driver.PageSource;
-                return src.Contains("Logout", StringComparison.OrdinalIgnoreCase)
-                    || src.Contains("MY ACCOUNT", StringComparison.OrdinalIgnoreCase);
+                Wait(SHORT_WAIT).Until(d =>
+                {
+                    var list = d.FindElements(By.CssSelector(
+                        ".ui-autocomplete-list-item, .p-autocomplete-item, .ng-option, " +
+                        "mat-option, .mat-mdc-option, .mdc-list-item"));
+                    foreach (var item in list)
+                    {
+                        try
+                        {
+                            if (item.Displayed)
+                                return item;
+                        }
+                        catch
+                        {
+                            /* stale */
+                        }
+                    }
+
+                    return null;
+                })?.Click();
             }
-            catch { return false; }
+            catch { }
         }
 
         private WebDriverWait Wait(int seconds) =>
@@ -682,34 +790,6 @@ namespace IRCTCTatkalBot.Services
                 return el;
             }
             catch { return null; }
-        }
-
-        private void ClickFirstAutocomplete()
-        {
-            try
-            {
-                Wait(SHORT_WAIT).Until(d =>
-                {
-                    var list = d.FindElements(By.CssSelector(
-                        ".ui-autocomplete-list-item, .p-autocomplete-item, .ng-option, " +
-                        "mat-option, .mat-mdc-option, .mdc-list-item"));
-                    foreach (var item in list)
-                    {
-                        try
-                        {
-                            if (item.Displayed)
-                                return item;
-                        }
-                        catch
-                        {
-                            /* stale */
-                        }
-                    }
-
-                    return null;
-                })?.Click();
-            }
-            catch { }
         }
 
         private static void ClearAndType(IWebElement el, string text)

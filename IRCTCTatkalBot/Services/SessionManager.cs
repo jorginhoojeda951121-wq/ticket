@@ -88,7 +88,8 @@ namespace IRCTCTatkalBot.Services
                     options.BinaryLocation = chromePath;
 
                 _driver = ChromeDriverFactory.Create(options);
-                _driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(10);
+                // Explicit WebDriverWaits only — large implicit wait slows full-page searches.
+                _driver.Manage().Timeouts().ImplicitWait = TimeSpan.Zero;
 
                 Logger.Info($"SessionManager: ChromeDriver started for {_account.Username}");
             }
@@ -119,14 +120,15 @@ namespace IRCTCTatkalBot.Services
                 var wait = new WebDriverWait(_driver, TimeSpan.FromSeconds(30));
 
                 // Keep an open booking/results tab: do not navigate away if we're already mid-flow.
-                if (IsAlreadyLoggedIn(_driver))
+                if (IrctcSessionProbe.AppearsLoggedIn(_driver))
                 {
                     Logger.Info($"SessionManager: ✓ Already logged in for {_account.Username} (skipping login).");
                     _loginVerifiedOnce = true;
+                    await EnsureReadyForTrainSearchAsync(_driver, ct);
                     return true;
                 }
 
-                if (_loginVerifiedOnce && LooksLikeActiveBookingFlow(_driver))
+                if (_loginVerifiedOnce && LooksLikeActiveBookingFlowInternal(_driver))
                 {
                     Logger.Info($"SessionManager: ✓ Active booking/results session for {_account.Username} — skipping re-login and navigation.");
                     return true;
@@ -137,10 +139,11 @@ namespace IRCTCTatkalBot.Services
                 await Task.Delay(1200, ct);
 
                 // If the reused profile is already logged in, don't force the login modal flow.
-                if (IsAlreadyLoggedIn(_driver))
+                if (IrctcSessionProbe.AppearsLoggedIn(_driver))
                 {
                     Logger.Info($"SessionManager: ✓ Already logged in for {_account.Username} (skipping login).");
                     _loginVerifiedOnce = true;
+                    await EnsureReadyForTrainSearchAsync(_driver, ct);
                     return true;
                 }
 
@@ -231,9 +234,9 @@ namespace IRCTCTatkalBot.Services
                 }
 
                 // Post-login: IRCTC frequently redirects or re-renders the header.
-                // Use the same signals the user sees ("Welcome …", "MY ACCOUNT", Logout).
-                wait.Until(d => IsAlreadyLoggedIn(d));
+                wait.Until(d => IrctcSessionProbe.AppearsLoggedIn(d));
                 _loginVerifiedOnce = true;
+                await EnsureReadyForTrainSearchAsync(_driver, ct);
                 Logger.Info($"SessionManager: ✓ Login successful for {_account.Username}");
                 return true;
             }
@@ -262,11 +265,11 @@ namespace IRCTCTatkalBot.Services
             // If we've successfully logged in before, verify we're still logged in or check if UI has changed
             if (_loginVerifiedOnce)
             {
-                if (IsAlreadyLoggedIn(_driver))
+                if (IrctcSessionProbe.AppearsLoggedIn(_driver))
                     return true;
 
                 // Train-list often hides Welcome/Logout in the header but the booking strip still works.
-                if (LooksLikeActiveBookingFlow(_driver))
+                if (LooksLikeActiveBookingFlowInternal(_driver))
                 {
                     Logger.Info("SessionManager.IsLoggedIn: On train-list / booking flow — keeping session (header may show LOGIN).");
                     return true;
@@ -277,13 +280,32 @@ namespace IRCTCTatkalBot.Services
                 return false;
             }
 
-            return IsAlreadyLoggedIn(_driver);
+            return IrctcSessionProbe.AppearsLoggedIn(_driver);
         }
 
         /// <summary>
-        /// Train-list and booking sub-pages often still show a generic LOGIN chip while the modify-search strip is authenticated.
+        /// After login, land on train-search so SearchTrainAsync runs on the expected shell (same as booking retry path).
+        /// Does not navigate away from train-list / booking pages.
         /// </summary>
-        private static bool LooksLikeActiveBookingFlow(IWebDriver driver)
+        private static async Task EnsureReadyForTrainSearchAsync(IWebDriver driver, CancellationToken ct)
+        {
+            string u = driver.Url ?? "";
+            if (u.Contains("train-list", StringComparison.OrdinalIgnoreCase) ||
+                u.Contains("/nget/booking/", StringComparison.OrdinalIgnoreCase))
+                return;
+
+            if (!u.Contains("train-search", StringComparison.OrdinalIgnoreCase))
+            {
+                Logger.Info("SessionManager: Navigating to train-search after login.");
+                driver.Navigate().GoToUrl("https://www.irctc.co.in/nget/train-search");
+                await Task.Delay(800, ct);
+            }
+        }
+
+        /// <summary>
+        /// Train-list / booking flow marker (also covered by <see cref="IrctcSessionProbe"/>; kept for explicit session persistence).
+        /// </summary>
+        private static bool LooksLikeActiveBookingFlowInternal(IWebDriver driver)
         {
             try
             {
@@ -316,43 +338,6 @@ namespace IRCTCTatkalBot.Services
             catch
             {
                 /* ignore */
-            }
-
-            return false;
-        }
-
-        private static bool IsAlreadyLoggedIn(IWebDriver driver)
-        {
-            // IRCTC changes the header frequently; check a few robust signals.
-            try
-            {
-                // Train-list booking UI: trust flow markers over the marketing LOGIN button.
-                if (LooksLikeActiveBookingFlow(driver))
-                    return true;
-
-                // If LOGIN / REGISTER is visible in header, treat as logged out only when not on active booking flow.
-                foreach (var el in driver.FindElements(By.XPath("//a[contains(normalize-space(.),'LOGIN') or contains(normalize-space(.),'Login')] | //button[contains(normalize-space(.),'LOGIN') or contains(normalize-space(.),'Login')]")))
-                {
-                    try
-                    {
-                        if (el.Displayed) return false;
-                    }
-                    catch
-                    {
-                        /* stale */
-                    }
-                }
-
-                if (driver.FindElements(By.XPath("//a[contains(translate(normalize-space(.),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'logout') or contains(translate(normalize-space(.),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'log out')]")).Count > 0)
-                    return true;
-                if (driver.FindElements(By.CssSelector("a[href*='logout']")).Count > 0)
-                    return true;
-                if (driver.FindElements(By.XPath("//*[contains(normalize-space(.),'Welcome') and contains(.,'(')]")).Count > 0)
-                    return true;
-            }
-            catch
-            {
-                // ignore transient DOM issues
             }
 
             return false;
