@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using IRCTCTatkalBot.ViewModels;
 
 namespace IRCTCTatkalBot.Services
@@ -61,6 +62,12 @@ namespace IRCTCTatkalBot.Services
             if (string.IsNullOrWhiteSpace(vm.TrainClass))
                 errors.Add("Train class is required.");
 
+            string trainNo = (vm.TrainNumber ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(trainNo))
+                errors.Add("Train number is required. Many trains share the same route — enter the numeric train number (e.g. 12215) so the correct train is selected.");
+            else if (!IsValidIrctcTrainNumber(trainNo))
+                errors.Add($"Train number must be 4–6 digits only (got \"{trainNo}\"). Example: 12215.");
+
             var pax = vm.GetPassengersSnapshot();
             if (pax.Count == 0)
                 errors.Add("Add at least one passenger.");
@@ -83,6 +90,13 @@ namespace IRCTCTatkalBot.Services
             }
 
             return errors;
+        }
+
+        /// <summary>IRCTC passenger train numbers are typically 4–6 digits.</summary>
+        public static bool IsValidIrctcTrainNumber(string? trainNumber)
+        {
+            string t = (trainNumber ?? "").Trim();
+            return t.Length > 0 && Regex.IsMatch(t, @"^\d{4,6}$");
         }
 
         private static DateTime GetIndiaDateToday()

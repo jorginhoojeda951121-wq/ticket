@@ -54,6 +54,10 @@ namespace IRCTCTatkalBot.Services
                     src.Contains("My Account", StringComparison.OrdinalIgnoreCase) ||
                     (src.Contains("Welcome", StringComparison.OrdinalIgnoreCase) && src.Contains("(", StringComparison.Ordinal)))
                     return true;
+                if (src.Contains("\"isLoggedIn\":true", StringComparison.OrdinalIgnoreCase) ||
+                    src.Contains("'isLoggedIn':true", StringComparison.OrdinalIgnoreCase) ||
+                    src.Contains("loggedInUser", StringComparison.OrdinalIgnoreCase))
+                    return true;
             }
             catch { /* ignore */ }
 
@@ -112,6 +116,11 @@ namespace IRCTCTatkalBot.Services
                 if (src.Contains("MY ACCOUNT", StringComparison.OrdinalIgnoreCase) ||
                     src.Contains("My Account", StringComparison.OrdinalIgnoreCase))
                     return true;
+                // Angular / SPA sometimes embeds auth flags without classic header text
+                if (src.Contains("\"isLoggedIn\":true", StringComparison.OrdinalIgnoreCase) ||
+                    src.Contains("'isLoggedIn':true", StringComparison.OrdinalIgnoreCase) ||
+                    src.Contains("loggedInUser", StringComparison.OrdinalIgnoreCase))
+                    return true;
             }
             catch { /* ignore */ }
 
@@ -133,7 +142,19 @@ namespace IRCTCTatkalBot.Services
                         name.Contains("TOKEN", StringComparison.OrdinalIgnoreCase) ||
                         name.Contains("SESSION", StringComparison.OrdinalIgnoreCase) ||
                         name.Contains("IRCTC", StringComparison.OrdinalIgnoreCase) ||
-                        name.Contains("USER", StringComparison.OrdinalIgnoreCase))
+                        name.Contains("USER", StringComparison.OrdinalIgnoreCase) ||
+                        name.Contains("CSRF", StringComparison.OrdinalIgnoreCase) ||
+                        name.Contains("csrf", StringComparison.OrdinalIgnoreCase) ||
+                        name.Contains("JSESSION", StringComparison.OrdinalIgnoreCase) ||
+                        name.Contains("ASPXAUTH", StringComparison.OrdinalIgnoreCase) ||
+                        name.Contains("Refresh", StringComparison.OrdinalIgnoreCase) ||
+                        name.Contains("Access", StringComparison.OrdinalIgnoreCase) ||
+                        name.Contains("AWSALB", StringComparison.OrdinalIgnoreCase) ||
+                        name.Contains("incap", StringComparison.OrdinalIgnoreCase) ||
+                        name.Contains("bm_", StringComparison.OrdinalIgnoreCase) ||
+                        name.Contains("ak_bmsc", StringComparison.OrdinalIgnoreCase) ||
+                        name.Contains("__Secure", StringComparison.OrdinalIgnoreCase) ||
+                        name.Contains("conductor", StringComparison.OrdinalIgnoreCase))
                         return true;
                 }
             }

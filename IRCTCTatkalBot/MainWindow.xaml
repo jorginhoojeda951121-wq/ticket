@@ -719,7 +719,7 @@
                                 Style="{StaticResource DatePickerStyle}"
                                 SelectedDateChanged="JourneyDatePicker_SelectedDateChanged"/>
 
-                    <TextBlock Text="Train Number (optional)" Style="{StaticResource Label}"/>
+                    <TextBlock Text="Train Number (required — e.g. 12215)" Style="{StaticResource Label}"/>
                     <TextBox Text="{Binding TrainNumber, UpdateSourceTrigger=PropertyChanged}"
                              Style="{StaticResource Input}"/>
 

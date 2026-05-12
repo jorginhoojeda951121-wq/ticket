@@ -28,6 +28,10 @@ namespace IRCTCTatkalBot.Services
         private const int LONG_WAIT   = 35;   // seconds – train list load
         /// <summary>Train-search Angular shell + station autocomplete; explicit wait only (implicit wait is 0).</summary>
         private const int TRAIN_SEARCH_INPUT_WAIT = 22;
+        /// <summary>IRCTC often opens Book Now slowly after class cell click; longer than SHORT_WAIT.</summary>
+        private const int BOOK_NOW_WAIT = 22;
+
+        private string? _lastSelectTrainFailureReason;
 
         public event Action<BookingResult>? OnStatusChanged;
 
@@ -51,6 +55,7 @@ namespace IRCTCTatkalBot.Services
                 if (alreadyIn)
                 {
                     Logger.Info($"BookingEngine: Session still active – skipping re-login.");
+                    Logger.Info("BookingEngine: Note — IRCTC may still show LOGIN / REGISTER in the header while your session is valid; automation relies on cookies and booking pages, not that chip.");
                     Driver.Navigate().GoToUrl("https://www.irctc.co.in/nget/train-search");
                     await Task.Delay(900, ct);
                 }
@@ -65,8 +70,10 @@ namespace IRCTCTatkalBot.Services
                     return Fail("Search failed");
 
                 UpdateStatus(BookingStatus.SelectingTrain);
+                _lastSelectTrainFailureReason = null;
                 if (!await SelectTrainAndClassAsync(ct))
-                    return Fail($"Could not select train/class: Timed out after {LONG_WAIT} seconds | url={Driver.Url} title={Driver.Title}");
+                    return Fail(_lastSelectTrainFailureReason
+                        ?? $"Could not select train/class for train {_config.TrainNumber?.Trim()} class {_config.TrainClass}. url={Driver.Url}");
 
                 UpdateStatus(BookingStatus.FillingPassengers);
                 if (!await FillPassengersAsync(ct))
@@ -240,30 +247,41 @@ namespace IRCTCTatkalBot.Services
         }
 
         // ────────────────────────────────────────────────────────────────
-        //  SELECT TRAIN & CLASS  ← primary bug fix
+        //  SELECT TRAIN & CLASS
         // ────────────────────────────────────────────────────────────────
         private async Task<bool> SelectTrainAndClassAsync(CancellationToken ct)
         {
+            _lastSelectTrainFailureReason = null;
             try
             {
-                // ── BUG-FIX 1: Guard against empty train number ───────────
                 string trainNo = (_config.TrainNumber ?? "").Trim();
-                Logger.Info($"BookingEngine: Looking for train {trainNo} class {_config.TrainClass}");
-
                 if (string.IsNullOrEmpty(trainNo))
-                    Logger.Warning("BookingEngine: Train number is EMPTY – will select the first available train.");
+                {
+                    _lastSelectTrainFailureReason =
+                        "Train number is required. Enter the numeric train number (e.g. 12215) so the correct train row is selected.";
+                    Logger.Error($"BookingEngine: {_lastSelectTrainFailureReason}");
+                    return false;
+                }
 
-                // ── BUG-FIX 2: Updated selectors for IRCTC's Angular UI ───
-                // IRCTC uses Angular components. Try multiple selectors with
-                // a generous wait so the lazy-loaded list has time to appear.
+                if (!PreFlightValidator.IsValidIrctcTrainNumber(trainNo))
+                {
+                    _lastSelectTrainFailureReason =
+                        $"Train number must be 4–6 digits (got \"{trainNo}\"). Example: 12215.";
+                    Logger.Error($"BookingEngine: {_lastSelectTrainFailureReason}");
+                    return false;
+                }
+
+                string[] classTokens = BuildClassMatchTokens(_config.TrainClass);
+                Logger.Info($"BookingEngine: Selecting train {trainNo}, class tokens: {string.Join(", ", classTokens)}");
+
                 IReadOnlyList<IWebElement>? trainRows = null;
                 string[] rowSelectors =
                 {
-                    "app-train-avl-enq",           // Angular component (current)
-                    "div.train-avl-holder",         // fallback
-                    "div.train-list",               // older layout
-                    "div.train-brd-dtl",            // older layout
-                    ".train-info-block",            // original selector (kept as last resort)
+                    "app-train-avl-enq",
+                    "div.train-avl-holder",
+                    "div.train-list",
+                    "div.train-brd-dtl",
+                    ".train-info-block",
                 };
 
                 foreach (string sel in rowSelectors)
@@ -277,7 +295,7 @@ namespace IRCTCTatkalBot.Services
                         });
                         if (trainRows?.Count > 0)
                         {
-                            Logger.Info($"BookingEngine: Found {trainRows.Count} train(s) using selector '{sel}'.");
+                            Logger.Info($"BookingEngine: Found {trainRows.Count} train row(s) using '{sel}'.");
                             break;
                         }
                     }
@@ -286,95 +304,316 @@ namespace IRCTCTatkalBot.Services
 
                 if (trainRows == null || trainRows.Count == 0)
                 {
-                    Logger.Error("BookingEngine: No trains found on results page.");
+                    _lastSelectTrainFailureReason = "No train rows appeared on the results page.";
+                    Logger.Error($"BookingEngine: {_lastSelectTrainFailureReason}");
                     _session.TakeScreenshot("select_error");
                     return false;
                 }
 
-                // ── Find the matching train row ───────────────────────────
-                IWebElement? trainRow = null;
-                if (!string.IsNullOrEmpty(trainNo))
+                IWebElement? trainRow = FindTrainRowForNumber(trainRows, trainNo);
+                if (trainRow == null)
                 {
-                    // Try to match by train number text within the row
-                    trainRow = trainRows.FirstOrDefault(r =>
-                    {
-                        try
-                        {
-                            // Multiple inner selectors for the train number text
-                            string[] numSelectors =
-                            {
-                                ".train-number", ".trainNo", "h2", "p.train-number",
-                                "strong", "div.train-brd-dtl p", "span.trainno"
-                            };
-                            return numSelectors.Any(s =>
-                            {
-                                try { return r.FindElement(By.CssSelector(s)).Text.Contains(trainNo); }
-                                catch { return false; }
-                            });
-                        }
-                        catch { return false; }
-                    });
-
-                    if (trainRow == null)
-                        Logger.Warning($"BookingEngine: Train {trainNo} not found in list – selecting first available.");
+                    _lastSelectTrainFailureReason =
+                        $"Train {trainNo} was not found in the search results. Check train number, route, date, and quota.";
+                    Logger.Error($"BookingEngine: {_lastSelectTrainFailureReason}");
+                    _session.TakeScreenshot("select_error");
+                    return false;
                 }
-                trainRow ??= trainRows[0];
 
-                // ── Scroll the row into view ───────────────────────────────
+                Logger.Info("BookingEngine: Matched train row — scrolling into view.");
                 JS.ExecuteScript("arguments[0].scrollIntoView({block:'center'});", trainRow);
-                await Task.Delay(500, ct);
+                await Task.Delay(400, ct);
 
-                // ── Find the class/availability button ────────────────────
-                string[] classSelectors =
-                {
-                    "td.pre-avl",
-                    "div.pre-avl",
-                    "td.available-status",
-                    "td[class*='AVAILABLE']",
-                    "td[class*='avail']",
-                    ".booking-button",
-                    "td button",
-                };
+                TryExpandTrainRow(trainRow);
 
-                IWebElement? classBtn = null;
-                foreach (string sel in classSelectors)
-                {
-                    var candidates = trainRow.FindElements(By.CssSelector(sel));
-                    classBtn = candidates.FirstOrDefault(b =>
-                        b.Text.Contains(_config.TrainClass, StringComparison.OrdinalIgnoreCase));
-                    if (classBtn != null) break;
-                }
-
+                IWebElement? classBtn = FindClassAvailabilityElement(trainRow, classTokens);
                 if (classBtn == null)
                 {
-                    Logger.Error($"BookingEngine: Class '{_config.TrainClass}' button not found in train row.");
+                    _lastSelectTrainFailureReason =
+                        $"Could not find a '{_config.TrainClass}' availability cell for train {trainNo}. The site layout may have changed, or this class is not offered on this train.";
+                    Logger.Error($"BookingEngine: {_lastSelectTrainFailureReason}");
                     _session.TakeScreenshot("select_error");
                     return false;
                 }
 
+                Logger.Info("BookingEngine: Clicking class / availability cell.");
                 _session.SafeClick(classBtn);
-                await Task.Delay(1200, ct);
+                await Task.Delay(800, ct);
 
-                // ── Click the Book Now button ──────────────────────────────
-                var bookBtn = Wait(SHORT_WAIT).Until(d =>
+                var bookBtn = WaitForBookNowButton(BOOK_NOW_WAIT);
+                if (bookBtn == null)
                 {
-                    var el = TryFind(d,
-                        "button[class*='btnDefault'].booking-cls, " +
-                        "button.trainBook, " +
-                        "button[class*='book-btn'], " +
-                        "button[title*='Book Now'], " +
-                        "a[class*='book-now']");
-                    return el?.Displayed == true && el.Enabled ? el : null;
-                });
-                _session.SafeClick(bookBtn!);
+                    _lastSelectTrainFailureReason =
+                        $"Book Now did not appear within {BOOK_NOW_WAIT}s after choosing class '{_config.TrainClass}' for train {trainNo}. Try again or check IRCTC UI (WL trains still show Book Now when booking is allowed).";
+                    Logger.Error($"BookingEngine: {_lastSelectTrainFailureReason}");
+                    _session.TakeScreenshot("select_error");
+                    return false;
+                }
+
+                Logger.Info("BookingEngine: Clicking Book Now.");
+                _session.SafeClick(bookBtn);
                 await Task.Delay(2000, ct);
                 return true;
             }
             catch (Exception ex)
             {
                 Logger.Error(ex, "BookingEngine.SelectTrainAndClassAsync");
+                _lastSelectTrainFailureReason ??= $"Select train/class error: {ex.Message}";
                 _session.TakeScreenshot("select_error");
                 return false;
+            }
+        }
+
+        private static IWebElement? FindTrainRowForNumber(IReadOnlyList<IWebElement> rows, string trainNo)
+        {
+            foreach (var r in rows)
+            {
+                try
+                {
+                    if (!r.Displayed)
+                        continue;
+                    string inner = "";
+                    try { inner = r.GetDomProperty("innerHTML") ?? ""; } catch { /* not all drivers expose */ }
+                    string block = (r.Text ?? "") + " " + inner;
+                    if (block.Contains(trainNo, StringComparison.Ordinal))
+                        return r;
+                }
+                catch
+                {
+                    /* stale */
+                }
+            }
+
+            string[] numSelectors =
+            {
+                ".train-number", ".trainNo", "h2", "p.train-number",
+                "strong", "div.train-brd-dtl p", "span.trainno", "span[class*='train']",
+            };
+
+            foreach (var r in rows)
+            {
+                try
+                {
+                    if (!r.Displayed)
+                        continue;
+                    foreach (string s in numSelectors)
+                    {
+                        try
+                        {
+                            var el = r.FindElement(By.CssSelector(s));
+                            if ((el.Text ?? "").Contains(trainNo, StringComparison.Ordinal))
+                                return r;
+                        }
+                        catch
+                        {
+                            /* no such sub-element */
+                        }
+                    }
+                }
+                catch
+                {
+                    /* stale row */
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>IRCTC sometimes collapses rows — best-effort expand before picking class.</summary>
+        private static void TryExpandTrainRow(IWebElement row)
+        {
+            try
+            {
+                var toggles = row.FindElements(By.CssSelector(
+                    "[class*='expand'],[class*='accordion'],[class*='toggle'],[class*='down-arrow'],i.fa-chevron-down,mat-icon"));
+                foreach (var t in toggles)
+                {
+                    try
+                    {
+                        if (t.Displayed && t.Enabled)
+                        {
+                            t.Click();
+                            break;
+                        }
+                    }
+                    catch { /* ignore */ }
+                }
+            }
+            catch { /* ignore */ }
+        }
+
+        private static string[] BuildClassMatchTokens(string trainClass)
+        {
+            var c = (trainClass ?? "").Trim().ToUpperInvariant();
+            var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (c.Length == 0)
+                return Array.Empty<string>();
+
+            set.Add(c);
+            switch (c)
+            {
+                case "1AC":
+                case "1A":
+                    set.Add("1A");
+                    set.Add("1AC");
+                    set.Add("FIRST");
+                    break;
+                case "2AC":
+                case "2A":
+                    set.Add("2A");
+                    set.Add("2AC");
+                    break;
+                case "3AC":
+                case "3A":
+                    set.Add("3A");
+                    set.Add("3AC");
+                    break;
+                case "SL":
+                    set.Add("SL");
+                    set.Add("SLEEPER");
+                    break;
+                case "CC":
+                    set.Add("CC");
+                    set.Add("CHAIR");
+                    break;
+                case "2S":
+                    set.Add("2S");
+                    set.Add("SECOND");
+                    break;
+                case "EC":
+                    set.Add("EC");
+                    set.Add("EXEC");
+                    break;
+            }
+
+            return set.ToArray();
+        }
+
+        private static bool ElementReferencesClass(IWebElement el, string[] tokens)
+        {
+            try
+            {
+                string blob = string.Join(" ",
+                    new[]
+                    {
+                        el.Text ?? "",
+                        el.GetDomAttribute("aria-label") ?? "",
+                        el.GetDomAttribute("title") ?? "",
+                        el.GetDomAttribute("class") ?? "",
+                        el.GetDomAttribute("id") ?? "",
+                    });
+                return tokens.Any(t => t.Length > 0 && blob.Contains(t, StringComparison.OrdinalIgnoreCase));
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static IWebElement? FindClassAvailabilityElement(IWebElement row, string[] classTokens)
+        {
+            string[] classSelectors =
+            {
+                "td.pre-avl",
+                "div.pre-avl",
+                "td.available-status",
+                "td[class*='AVAILABLE']",
+                "td[class*='avail']",
+                ".booking-button",
+                "td button",
+                "div[class*='avl']",
+                "button[class*='avl']",
+            };
+
+            foreach (string sel in classSelectors)
+            {
+                try
+                {
+                    foreach (var b in row.FindElements(By.CssSelector(sel)))
+                    {
+                        try
+                        {
+                            if (b.Displayed && ElementReferencesClass(b, classTokens))
+                                return b;
+                        }
+                        catch { /* stale */ }
+                    }
+                }
+                catch { /* ignore */ }
+            }
+
+            try
+            {
+                foreach (var b in row.FindElements(By.XPath(
+                             ".//*[self::td or self::div or self::button or self::a][contains(@class,'avl') or contains(@class,'AVL') or contains(@class,'class')]")))
+                {
+                    try
+                    {
+                        if (b.Displayed && ElementReferencesClass(b, classTokens))
+                            return b;
+                    }
+                    catch { /* stale */ }
+                }
+            }
+            catch { /* ignore */ }
+
+            return null;
+        }
+
+        private IWebElement? WaitForBookNowButton(int seconds)
+        {
+            var w = new WebDriverWait(Driver, TimeSpan.FromSeconds(seconds));
+            try
+            {
+                return w.Until(d =>
+                {
+                    // Global: visible enabled Book Now
+                    foreach (var xp in new[]
+                             {
+                                 "//button[contains(translate(normalize-space(.),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'book now')]",
+                                 "//a[contains(translate(normalize-space(.),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'book now')]",
+                                 "//*[contains(translate(normalize-space(.),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'book now') and (self::button or self::a)]",
+                             })
+                    {
+                        foreach (var el in d.FindElements(By.XPath(xp)))
+                        {
+                            try
+                            {
+                                if (el.Displayed && el.Enabled)
+                                    return el;
+                            }
+                            catch { /* stale */ }
+                        }
+                    }
+
+                    foreach (var css in new[]
+                             {
+                                 "button[class*='btnDefault'].booking-cls",
+                                 "button.trainBook",
+                                 "button[class*='book-btn']",
+                                 "button[title*='Book Now'], button[title*='book now']",
+                                 "a[class*='book-now'], a[class*='Book-Now']",
+                                 "button.book_now",
+                                 "a.book_now",
+                             })
+                    {
+                        foreach (var el in d.FindElements(By.CssSelector(css)))
+                        {
+                            try
+                            {
+                                if (el.Displayed && el.Enabled)
+                                    return el;
+                            }
+                            catch { /* stale */ }
+                        }
+                    }
+
+                    return null;
+                });
+            }
+            catch (WebDriverTimeoutException)
+            {
+                return null;
             }
         }
 
