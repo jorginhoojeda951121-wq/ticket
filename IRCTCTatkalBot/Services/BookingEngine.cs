@@ -216,6 +216,7 @@ namespace IRCTCTatkalBot.Services
                 var fromInput = Wait(TRAIN_SEARCH_INPUT_WAIT).Until(d =>
                     FindFirstVisibleStationInput(d, forOrigin: true));
                 ClearAndType(fromInput!, _config.FromStation);
+                DispatchJourneyInputEvents(fromInput!);
                 await Task.Delay(550, ct);
                 await ClickAutocompleteMatchingAsync(_config.FromStation, ct);
                 try { fromInput!.SendKeys(Keys.Tab); } catch { /* stale */ }
@@ -225,6 +226,7 @@ namespace IRCTCTatkalBot.Services
                 var toInput = Wait(TRAIN_SEARCH_INPUT_WAIT).Until(d =>
                     FindFirstVisibleStationInput(d, forOrigin: false));
                 ClearAndType(toInput!, _config.ToStation);
+                DispatchJourneyInputEvents(toInput!);
                 await Task.Delay(550, ct);
                 await ClickAutocompleteMatchingAsync(_config.ToStation, ct);
                 try { toInput!.SendKeys(Keys.Tab); } catch { /* stale */ }
@@ -233,7 +235,9 @@ namespace IRCTCTatkalBot.Services
                 // ── Journey date – use JS so calendar binding isn't needed ─
                 // ── BUG-FIX: "Journey date may not have bound to calendar" ─
                 string dateStr = _config.JourneyDate.ToString("dd/MM/yyyy");
-                var dateInput = TryFind(Driver, "p-calendar input,input[placeholder*='Date']");
+                var dateInput = TryFind(Driver,
+                    "app-jp-input form #jDate > span > input, app-jp-input #jDate > span > input, " +
+                    "#jDate > span > input, p-calendar input, input[placeholder*='Date']");
                 if (dateInput != null)
                 {
                     // Click to open calendar, then set via JS + fire Angular events
@@ -241,6 +245,7 @@ namespace IRCTCTatkalBot.Services
                     await Task.Delay(400, ct);
                     JS.ExecuteScript(
                         "arguments[0].value = arguments[1]; " +
+                        "arguments[0].dispatchEvent(new Event('keydown', {bubbles:true})); " +
                         "arguments[0].dispatchEvent(new Event('input', {bubbles:true})); " +
                         "arguments[0].dispatchEvent(new Event('change', {bubbles:true}));",
                         dateInput, dateStr);
@@ -255,24 +260,78 @@ namespace IRCTCTatkalBot.Services
                 bool classSet = false;
                 try
                 {
-                    // Attempt 1: ng-select or p-dropdown
-                    var classDropdown = TryFind(Driver,
-                        "p-dropdown[formcontrolname='journeyClass'], " +
-                        "ng-select[formcontrolname='journeyClass']");
-                    if (classDropdown != null)
+                    // Extension-aligned: #journeyClass host + ul li (IRCTC jp-input shell).
+                    var jClassHost = TryFind(Driver, "app-jp-input #journeyClass, #journeyClass");
+                    if (jClassHost != null)
                     {
-                        _session.SafeClick(classDropdown);
-                        await Task.Delay(500, ct);
-                        string[] classAliases = IrctcTrainClass.JourneySearchAliases(_config.TrainClass);
-                        var opt = Driver.FindElements(By.CssSelector(
-                            ".p-dropdown-item, .ng-option"))
-                            .FirstOrDefault(o =>
-                                classAliases.Any(a =>
-                                    o.Text.Contains(a, StringComparison.OrdinalIgnoreCase)));
-                        if (opt != null) { _session.SafeClick(opt); classSet = true; }
+                        var arrow = jClassHost.FindElements(By.CssSelector("div > div[role='button']"))
+                            .Concat(jClassHost.FindElements(By.CssSelector("div[role='button']")))
+                            .FirstOrDefault(e =>
+                            {
+                                try
+                                {
+                                    return e.Displayed && e.Enabled;
+                                }
+                                catch
+                                {
+                                    return false;
+                                }
+                            });
+                        if (arrow != null)
+                        {
+                            _session.SafeClick(arrow);
+                            await Task.Delay(450, ct);
+                            string[] extAliases = IrctcTrainClass.JourneySearchAliases(_config.TrainClass);
+                            var optLi = jClassHost.FindElements(By.CssSelector("ul li"))
+                                .FirstOrDefault(o =>
+                                {
+                                    try
+                                    {
+                                        if (!o.Displayed)
+                                            return false;
+                                        string t = o.Text ?? "";
+                                        return extAliases.Any(a =>
+                                            t.Contains(a, StringComparison.OrdinalIgnoreCase));
+                                    }
+                                    catch
+                                    {
+                                        return false;
+                                    }
+                                });
+                            if (optLi != null)
+                            {
+                                _session.SafeClick(optLi);
+                                classSet = true;
+                            }
+                        }
                     }
                 }
                 catch { }
+
+                if (!classSet)
+                {
+                    try
+                    {
+                        // Attempt 1: ng-select or p-dropdown
+                        var classDropdown = TryFind(Driver,
+                            "p-dropdown[formcontrolname='journeyClass'], " +
+                            "ng-select[formcontrolname='journeyClass']");
+                        if (classDropdown != null)
+                        {
+                            _session.SafeClick(classDropdown);
+                            await Task.Delay(500, ct);
+                            string[] classAliases = IrctcTrainClass.JourneySearchAliases(_config.TrainClass);
+                            var opt = Driver.FindElements(By.CssSelector(
+                                    ".p-dropdown-item, .ng-option"))
+                                .FirstOrDefault(o =>
+                                    classAliases.Any(a =>
+                                        o.Text.Contains(a, StringComparison.OrdinalIgnoreCase)));
+                            if (opt != null) { _session.SafeClick(opt); classSet = true; }
+                        }
+                    }
+                    catch { }
+                }
+
                 if (!classSet)
                 {
                     try
@@ -301,26 +360,80 @@ namespace IRCTCTatkalBot.Services
                 bool quotaSet = false;
                 try
                 {
-                    var quotaDd = TryFind(Driver,
-                        "p-dropdown[formcontrolname='quota'], ng-select[formcontrolname='quota']");
-                    if (quotaDd != null)
+                    var qHost = TryFind(Driver, "app-jp-input #journeyQuota, #journeyQuota");
+                    if (qHost != null)
                     {
-                        _session.SafeClick(quotaDd);
-                        await Task.Delay(500, ct);
-                        var opt = Driver.FindElements(By.CssSelector(".p-dropdown-item, .ng-option"))
-                            .FirstOrDefault(o =>
-                                o.Text.Contains("TATKAL", StringComparison.OrdinalIgnoreCase));
-                        if (opt != null) { _session.SafeClick(opt); quotaSet = true; }
+                        var qArrow = qHost.FindElements(By.CssSelector("div > div[role='button']"))
+                            .FirstOrDefault(e =>
+                            {
+                                try
+                                {
+                                    return e.Displayed && e.Enabled;
+                                }
+                                catch
+                                {
+                                    return false;
+                                }
+                            });
+                        if (qArrow != null)
+                        {
+                            _session.SafeClick(qArrow);
+                            await Task.Delay(450, ct);
+                            string qLabel = (_config.Quota ?? "TATKAL").Trim();
+                            var qOpt = qHost.FindElements(By.CssSelector("ul li"))
+                                .FirstOrDefault(o =>
+                                {
+                                    try
+                                    {
+                                        if (!o.Displayed)
+                                            return false;
+                                        string t = o.Text ?? "";
+                                        return t.Contains(qLabel, StringComparison.OrdinalIgnoreCase);
+                                    }
+                                    catch
+                                    {
+                                        return false;
+                                    }
+                                });
+                            if (qOpt != null)
+                            {
+                                _session.SafeClick(qOpt);
+                                quotaSet = true;
+                            }
+                        }
                     }
                 }
                 catch { }
+
+                if (!quotaSet)
+                {
+                    try
+                    {
+                        var quotaDd = TryFind(Driver,
+                            "p-dropdown[formcontrolname='quota'], ng-select[formcontrolname='quota']");
+                        if (quotaDd != null)
+                        {
+                            _session.SafeClick(quotaDd);
+                            await Task.Delay(500, ct);
+                            var opt = Driver.FindElements(By.CssSelector(".p-dropdown-item, .ng-option"))
+                                .FirstOrDefault(o =>
+                                    o.Text.Contains("TATKAL", StringComparison.OrdinalIgnoreCase));
+                            if (opt != null) { _session.SafeClick(opt); quotaSet = true; }
+                        }
+                    }
+                    catch { }
+                }
+
                 if (!quotaSet)
                 {
                     try
                     {
                         var sel = TryFind(Driver, "select[aria-label*='Quota']");
                         if (sel != null)
-                        { new SelectHelper(sel).SelectByText(_config.Quota); quotaSet = true; }
+                        {
+                            new SelectHelper(sel).SelectByText(_config.Quota ?? "TATKAL");
+                            quotaSet = true;
+                        }
                     }
                     catch { }
                 }
@@ -331,6 +444,7 @@ namespace IRCTCTatkalBot.Services
                 {
                     return FindFirstVisibleClickable(d, new[]
                     {
+                        "button.search_btn.train_Search[type='submit']",
                         "button.search_btn",
                         "button[class*='train_Search']",
                         "button[title*='Search']",
@@ -1205,6 +1319,9 @@ namespace IRCTCTatkalBot.Services
             string[] selectors = forOrigin
                 ? new[]
                 {
+                    "app-jp-input form #origin > span > input",
+                    "app-jp-input #origin > span > input",
+                    "#origin > span > input",
                     "app-train-search ng-select[formcontrolname='origin'] input",
                     "app-train-search ng-select[formcontrolname='origin'] .ng-input input",
                     "app-train-search p-autocomplete[formcontrolname='origin'] input",
@@ -1224,6 +1341,9 @@ namespace IRCTCTatkalBot.Services
                 }
                 : new[]
                 {
+                    "app-jp-input form #destination > span > input",
+                    "app-jp-input #destination > span > input",
+                    "#destination > span > input",
                     "app-train-search ng-select[formcontrolname='destination'] input",
                     "app-train-search ng-select[formcontrolname='destination'] .ng-input input",
                     "app-train-search p-autocomplete[formcontrolname='destination'] input",
@@ -1339,6 +1459,23 @@ namespace IRCTCTatkalBot.Services
                 return el;
             }
             catch { return null; }
+        }
+
+        /// <summary>Align with extension journey fields: keydown + input + change for Angular/ng-select.</summary>
+        private void DispatchJourneyInputEvents(IWebElement el)
+        {
+            try
+            {
+                JS.ExecuteScript(
+                    "var el = arguments[0]; if (!el) return; " +
+                    "el.dispatchEvent(new Event('keydown', {bubbles:true})); " +
+                    "el.dispatchEvent(new Event('input', {bubbles:true})); " +
+                    "el.dispatchEvent(new Event('change', {bubbles:true}));", el);
+            }
+            catch
+            {
+                /* ignore */
+            }
         }
 
         private static void ClearAndType(IWebElement el, string text)

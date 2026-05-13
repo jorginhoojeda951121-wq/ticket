@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using OpenQA.Selenium;
@@ -154,21 +156,27 @@ namespace IRCTCTatkalBot.Services
                     await Task.Delay(900, ct);
                 }
 
-                // Username field inside modal (Angular may render attribute as formcontrolname)
-                var usernameField = wait.Until(d => FindFirstVisible(d,
-                    By.CssSelector("input[formcontrolname='userid'], input[formControlName='userid']")))
+                // Prefer fields inside IRCTC's login host (same scope as working Chrome extension: #divMain > app-login).
+                var usernameField = wait.Until(d => FindFirstVisibleInLoginScopes(d,
+                    By.CssSelector(
+                        "input[type='text'][formcontrolname='userid'], input[type='text'][formControlName='userid'], " +
+                        "input[formcontrolname='userid'], input[formControlName='userid']")))
                     ?? throw new WebDriverException("User id field not found.");
 
                 // Fill username
                 usernameField.Clear();
                 usernameField.SendKeys(_account.Username);
+                DispatchAngularInputChange(usernameField);
                 await Task.Delay(500, ct);
 
-                var passwordField = FindFirstVisible(_driver,
-                    By.CssSelector("input[formcontrolname='password'], input[formControlName='password']"))
+                var passwordField = FindFirstVisibleInLoginScopes(_driver!,
+                    By.CssSelector(
+                        "input[type='password'][formcontrolname='password'], input[type='password'][formControlName='password'], " +
+                        "input[formcontrolname='password'], input[formControlName='password']"))
                     ?? throw new WebDriverException("Password field not found after opening login.");
                 passwordField.Clear();
                 passwordField.SendKeys(_accountManager.GetPassword(_account));
+                DispatchAngularInputChange(passwordField);
                 await Task.Delay(500, ct);
 
                 // Captcha is not always present (depends on IRCTC UX / A/B tests / risk scoring).
@@ -189,8 +197,8 @@ namespace IRCTCTatkalBot.Services
                     else
                     {
                         var captchaImgWait = new WebDriverWait(_driver, TimeSpan.FromSeconds(15));
-                        var captchaElement = captchaImgWait.Until(d => FindFirstVisibleImage(d,
-                            By.CssSelector("img[src*='captcha'], img[src*='Captcha']")))
+                        var captchaElement = captchaImgWait.Until(d =>
+                            FindFirstCaptchaImageInLoginScopes(d))
                             ?? throw new WebDriverException("Captcha image not found in login dialog.");
                         string captchaBase64 = GetElementScreenshot(captchaElement);
                         captchaText = await _captchaSolver.SolveImageCaptchaAsync(captchaBase64, ct);
@@ -208,12 +216,22 @@ namespace IRCTCTatkalBot.Services
                 {
                     captchaInput.Clear();
                     captchaInput.SendKeys(captchaText);
+                    DispatchAngularInputChange(captchaInput);
                     await Task.Delay(500, ct);
                 }
                 else
+                {
                     await Task.Delay(300, ct);
+                    // Manual entry: nudge Angular bindings before submit (extension uses input/change events).
+                    if (captchaInput != null)
+                    {
+                        var capAgain = FindCaptchaInput(_driver!);
+                        if (capAgain != null)
+                            DispatchAngularInputChange(capAgain);
+                    }
+                }
 
-                // Submit inside modal (may be more than one submit on page — prefer login dialog)
+                // Submit inside modal
                 // Click submit button that belongs to the currently opened login modal/form.
                 // IRCTC pages often contain multiple "submit" buttons outside the modal.
                 // Angular often omits a native <form>; rely on dialog/modal ancestors + Enter fallback.
@@ -228,8 +246,10 @@ namespace IRCTCTatkalBot.Services
                     ex.Message.Contains("login form", StringComparison.OrdinalIgnoreCase))
                 {
                     Logger.Warning("SessionManager: Login submit button not resolved — trying Enter on password field.");
-                    var pwd = FindFirstVisible(_driver,
-                        By.CssSelector("input[formcontrolname='password'], input[formControlName='password']"));
+                    var pwd = FindFirstVisibleInLoginScopes(_driver!,
+                        By.CssSelector(
+                            "input[type='password'][formcontrolname='password'], input[type='password'][formControlName='password'], " +
+                            "input[formcontrolname='password'], input[formControlName='password']"));
                     pwd?.SendKeys(Keys.Enter);
                 }
 
@@ -347,15 +367,20 @@ namespace IRCTCTatkalBot.Services
 
         private static IWebElement? FindCaptchaInput(IWebDriver driver)
         {
-            foreach (var by in new[]
-                     {
-                         By.CssSelector("input[formcontrolname='captcha'], input[formControlName='captcha']"),
-                         By.CssSelector("input[placeholder*='captcha' i]"),
-                         By.CssSelector("input[id*='captcha' i], input[name*='captcha' i]"),
-                     })
+            var bys = new[]
             {
-                var el = FindFirstVisible(driver, by);
-                if (el != null) return el;
+                By.CssSelector(
+                    "input[type='text'][formcontrolname='captcha'], input[type='text'][formControlName='captcha']"),
+                By.CssSelector("input[formcontrolname='captcha'], input[formControlName='captcha']"),
+                By.CssSelector("input[placeholder*='captcha' i]"),
+                By.CssSelector("input[id*='captcha' i], input[name*='captcha' i]"),
+            };
+
+            foreach (var by in bys)
+            {
+                var el = FindFirstVisibleInLoginScopes(driver, by);
+                if (el != null)
+                    return el;
             }
 
             return null;
@@ -363,27 +388,11 @@ namespace IRCTCTatkalBot.Services
 
         private static bool IsUserIdFieldVisible(IWebDriver driver)
         {
-            foreach (var by in new[]
-                     {
-                         By.CssSelector("input[formcontrolname='userid']"),
-                         By.CssSelector("input[formControlName='userid']"),
-                     })
-            {
-                foreach (var el in driver.FindElements(by))
-                {
-                    try
-                    {
-                        if (el.Displayed)
-                            return true;
-                    }
-                    catch
-                    {
-                        /* stale */
-                    }
-                }
-            }
-
-            return false;
+            return FindFirstVisibleInLoginScopes(driver,
+                       By.CssSelector(
+                           "input[type='text'][formcontrolname='userid'], input[type='text'][formControlName='userid'], " +
+                           "input[formcontrolname='userid'], input[formControlName='userid']"))
+                   != null;
         }
 
         /// <summary>IRCTC shows "LOGIN / REGISTER" on the header; the Angular login form opens in a modal.</summary>
@@ -427,9 +436,84 @@ namespace IRCTCTatkalBot.Services
             SafeClick(trigger);
         }
 
-        private static IWebElement? FindFirstVisible(IWebDriver driver, By by)
+        private void DispatchAngularInputChange(IWebElement el)
         {
-            foreach (var el in driver.FindElements(by))
+            try
+            {
+                var js = (IJavaScriptExecutor)Driver;
+                js.ExecuteScript(
+                    "var el = arguments[0]; if (!el) return; " +
+                    "el.dispatchEvent(new Event('input', {bubbles:true})); " +
+                    "el.dispatchEvent(new Event('change', {bubbles:true}));", el);
+            }
+            catch (Exception ex)
+            {
+                Logger.Warning($"SessionManager: DispatchAngularInputChange: {ex.Message}");
+            }
+        }
+
+        /// <summary>IRCTC login fields live under <c>app-login</c> (extension uses <c>#divMain &gt; app-login</c>).</summary>
+        private static List<ISearchContext> GetLoginFieldSearchContexts(IWebDriver driver)
+        {
+            var list = new List<ISearchContext>();
+            foreach (var rootBy in new[] { By.CssSelector("#divMain > app-login"), By.CssSelector("app-login") })
+            {
+                foreach (var root in driver.FindElements(rootBy))
+                {
+                    try
+                    {
+                        if (root.Displayed)
+                            list.Add(root);
+                    }
+                    catch
+                    {
+                        /* stale */
+                    }
+                }
+            }
+
+            list.Add(driver);
+            return list;
+        }
+
+        private static IWebElement? FindFirstVisibleInLoginScopes(IWebDriver driver, By by)
+        {
+            foreach (ISearchContext ctx in GetLoginFieldSearchContexts(driver))
+            {
+                IWebElement? el = FindFirstVisible(ctx, by);
+                if (el != null)
+                    return el;
+            }
+
+            return null;
+        }
+
+        private static IWebElement? FindFirstCaptchaImageInLoginScopes(IWebDriver driver)
+        {
+            By[] bys =
+            {
+                By.CssSelector(".captcha-img"),
+                By.CssSelector("img.captcha-img"),
+                By.CssSelector("img[src*='captcha']"),
+                By.CssSelector("img[src*='Captcha']"),
+            };
+
+            foreach (ISearchContext ctx in GetLoginFieldSearchContexts(driver))
+            {
+                foreach (var by in bys)
+                {
+                    IWebElement? el = FindFirstVisibleImage(ctx, by);
+                    if (el != null)
+                        return el;
+                }
+            }
+
+            return null;
+        }
+
+        private static IWebElement? FindFirstVisible(ISearchContext context, By by)
+        {
+            foreach (var el in context.FindElements(by))
             {
                 try
                 {
@@ -445,9 +529,9 @@ namespace IRCTCTatkalBot.Services
             return null;
         }
 
-        private static IWebElement? FindFirstVisibleImage(IWebDriver driver, By by)
+        private static IWebElement? FindFirstVisibleImage(ISearchContext context, By by)
         {
-            foreach (var el in driver.FindElements(by))
+            foreach (var el in context.FindElements(by))
             {
                 try
                 {
@@ -473,10 +557,14 @@ namespace IRCTCTatkalBot.Services
                 {
                     try
                     {
-                        IWebElement? root = FindFirstVisible(driver,
-                            By.CssSelector("input[formcontrolname='password'], input[formControlName='password']"))
-                            ?? FindFirstVisible(driver,
-                                By.CssSelector("input[formcontrolname='userid'], input[formControlName='userid']"));
+                        IWebElement? root = FindFirstVisibleInLoginScopes(driver,
+                            By.CssSelector(
+                                "input[type='password'][formcontrolname='password'], input[type='password'][formControlName='password'], " +
+                                "input[formcontrolname='password'], input[formControlName='password']"))
+                            ?? FindFirstVisibleInLoginScopes(driver,
+                                By.CssSelector(
+                                    "input[type='text'][formcontrolname='userid'], input[type='text'][formControlName='userid'], " +
+                                    "input[formcontrolname='userid'], input[formControlName='userid']"));
                         if (root == null)
                             return null;
 
@@ -494,10 +582,14 @@ namespace IRCTCTatkalBot.Services
             }
             catch (WebDriverTimeoutException)
             {
-                IWebElement? root = FindFirstVisible(_driver!,
-                    By.CssSelector("input[formcontrolname='password'], input[formControlName='password']"))
-                    ?? FindFirstVisible(_driver!,
-                        By.CssSelector("input[formcontrolname='userid'], input[formControlName='userid']"));
+                IWebElement? root = FindFirstVisibleInLoginScopes(_driver!,
+                    By.CssSelector(
+                        "input[type='password'][formcontrolname='password'], input[type='password'][formControlName='password'], " +
+                        "input[formcontrolname='password'], input[formControlName='password']"))
+                    ?? FindFirstVisibleInLoginScopes(_driver!,
+                        By.CssSelector(
+                            "input[type='text'][formcontrolname='userid'], input[type='text'][formControlName='userid'], " +
+                            "input[formcontrolname='userid'], input[formControlName='userid']"));
                 if (root == null)
                     throw new WebDriverException("Login form not found for submit button.");
 
@@ -507,9 +599,10 @@ namespace IRCTCTatkalBot.Services
 
         private IWebElement FindLoginSubmitButton(IWebElement root)
         {
-            // 1) Prefer buttons inside a form, Material dialog, or generic modal (Angular often has no <form>).
+            // 1) Prefer buttons inside app-login (IRCTC extension scope), then form, Material dialog, or generic modal.
             string[] containerXPaths =
             {
+                "ancestor::app-login[1]",
                 "ancestor::form[1]",
                 "ancestor::*[@role='dialog'][1]",
                 "ancestor::mat-dialog-container[1]",

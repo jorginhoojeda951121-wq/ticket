@@ -1131,11 +1131,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "f:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot.Tests\\IRCTCTatkalBot.Tests.csproj",
+      "projectUniqueName": "F:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot.Tests\\IRCTCTatkalBot.Tests.csproj",
       "projectName": "IRCTCTatkalBot.Tests",
-      "projectPath": "f:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot.Tests\\IRCTCTatkalBot.Tests.csproj",
+      "projectPath": "F:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot.Tests\\IRCTCTatkalBot.Tests.csproj",
       "packagesPath": "C:\\Users\\Jupiter\\.nuget\\packages\\",
-      "outputPath": "f:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot.Tests\\obj\\",
+      "outputPath": "F:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot.Tests\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -1154,10 +1154,11 @@
       },
       "frameworks": {
         "net8.0-windows7.0": {
+          "framework": "net8.0-windows7.0",
           "targetAlias": "net8.0-windows",
           "projectReferences": {
-            "f:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot\\IRCTCTatkalBot.csproj": {
-              "projectPath": "f:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot\\IRCTCTatkalBot.csproj"
+            "F:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot\\IRCTCTatkalBot.csproj": {
+              "projectPath": "F:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot\\IRCTCTatkalBot.csproj"
             }
           }
         }
@@ -1176,6 +1177,7 @@
     },
     "frameworks": {
       "net8.0-windows7.0": {
+        "framework": "net8.0-windows7.0",
         "targetAlias": "net8.0-windows",
         "dependencies": {
           "Microsoft.NET.Test.Sdk": {

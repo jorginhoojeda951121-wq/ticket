@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "f:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot\\IRCTCTatkalBot.csproj": {}
+    "F:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot\\IRCTCTatkalBot.csproj": {}
   },
   "projects": {
-    "f:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot\\IRCTCTatkalBot.csproj": {
+    "F:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot\\IRCTCTatkalBot.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "f:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot\\IRCTCTatkalBot.csproj",
+        "projectUniqueName": "F:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot\\IRCTCTatkalBot.csproj",
         "projectName": "IRCTCTatkalBot",
-        "projectPath": "f:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot\\IRCTCTatkalBot.csproj",
+        "projectPath": "F:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot\\IRCTCTatkalBot.csproj",
         "packagesPath": "C:\\Users\\Jupiter\\.nuget\\packages\\",
-        "outputPath": "f:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot\\obj\\",
+        "outputPath": "F:\\reverse\\IRCTCTatkalBot\\IRCTCTatkalBot\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -29,7 +29,8 @@
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
-          "net8.0-windows7.0": {
+          "net8.0-windows": {
+            "framework": "net8.0-windows7.0",
             "targetAlias": "net8.0-windows",
             "projectReferences": {}
           }
@@ -47,7 +48,8 @@
         "SdkAnalysisLevel": "10.0.200"
       },
       "frameworks": {
-        "net8.0-windows7.0": {
+        "net8.0-windows": {
+          "framework": "net8.0-windows7.0",
           "targetAlias": "net8.0-windows",
           "dependencies": {
             "Selenium.WebDriver": {

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("IRCTCTatkalBot")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5697d6c01b076898cb64972714d1b76d6b24077c")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f23f9dd3f500bb04e7b7e1e533082f398d1b21bb")]
 [assembly: System.Reflection.AssemblyProductAttribute("IRCTCTatkalBot")]
 [assembly: System.Reflection.AssemblyTitleAttribute("IRCTCTatkalBot")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
